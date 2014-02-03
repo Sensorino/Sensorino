@@ -21,14 +21,21 @@
 
 #include <NRF24.h>
 #include <SPI.h>
+//Static init of variables
+uint8_t NRF24::_chipEnablePin = 9;
+uint8_t NRF24::_chipSelectPin = 10;
+void (* NRF24::pipehandlers[6])(uint8_t * pkt, uint8_t len);
 
-NRF24::NRF24(uint8_t chipEnablePin, uint8_t chipSelectPin) {
-    _crc = NRF24_EN_CRC; // Default: 1 byte CRC enabled
+void NRF24::configure(uint8_t chipEnablePin, uint8_t chipSelectPin) {
     _chipEnablePin = chipEnablePin;
     _chipSelectPin = chipSelectPin;
 }
 
 boolean NRF24::init() {
+    //Init the handlers pointers
+    for(int i=0; i<6; i++)
+        pipehandlers[i] =NULL;
+
     // Initialise the slave select pin
     pinMode(_chipEnablePin, OUTPUT);
     digitalWrite(_chipEnablePin, LOW);
@@ -53,15 +60,18 @@ boolean NRF24::init() {
     // Clear interrupts
     spiWriteRegister(NRF24_REG_07_STATUS, NRF24_RX_DR | NRF24_TX_DS | NRF24_MAX_RT);
 
+    //Masks interrupts by default and sets CRC
+    spiWriteRegister(NRF24_REG_00_CONFIG, NRF24_MASK_MAX_RT | NRF24_MASK_TX_DS | NRF24_MASK_RX_DR | NRF24_EN_CRC);
+
     //Enables dynamic payloads and dyanamic acks
     spiWriteRegister(NRF24_REG_1D_FEATURE, NRF24_EN_DPL | NRF24_EN_DYN_ACK);
-
-    //Make sure we are powered down
-    powerDown();
 
     // Flush FIFOs
     flushTx();
     flushRx();
+
+    //At beginning the chip is powered down
+    powerDown();
 
     return true;
 }
@@ -167,8 +177,23 @@ boolean NRF24::isPoweredUp(){
 }
 
 boolean NRF24::getRPD(){
+    powerUpRx();
+    delayMicroseconds(200);
     uint8_t rpd = spiReadRegister(NRF24_REG_09_RPD);
     return (rpd>0);
+}
+
+uint8_t NRF24::getRSSI(){
+    powerUpRx();
+    delayMicroseconds(200);
+    uint8_t rssi =0;
+    for(int i=0; i<256; i++){
+        rssi += getRPD();
+        delayMicroseconds(200);
+        flushRx();
+    }
+
+    return rssi;
 }
 
 NRF24::NRF24CRC NRF24::getCRC() {
@@ -185,15 +210,12 @@ NRF24::NRF24CRC NRF24::getCRC() {
 boolean NRF24::setCRC(NRF24CRC crc) {
     uint8_t reg = spiReadRegister(0);
     if(crc == NRF24CRCNO){
-        _crc = 0;
         reg = reg & ~NRF24_EN_CRC;
     }
     else if(crc == NRF24CRC1Byte){
-        _crc = NRF24_EN_CRC;
         reg = reg | NRF24_EN_CRC & ~NRF24_CRCO;
     }
     else{
-        _crc = NRF24_EN_CRC | NRF24_CRCO;
         reg = reg | NRF24_EN_CRC | NRF24_CRCO;
     }
     spiWriteRegister(NRF24_REG_00_CONFIG, reg);
@@ -348,6 +370,25 @@ boolean NRF24::enableAutoAck(uint8_t pipe){
     return isAutoAckEnabled(pipe);
 }
 
+boolean NRF24::disableAutoAck(uint8_t pipe){
+    uint8_t reg = spiReadRegister(NRF24_REG_01_EN_AA);
+    if(pipe == 0)
+        reg = reg & ~NRF24_ENAA_P0;
+    else if(pipe == 1)
+        reg = reg & ~NRF24_ENAA_P1;
+    else if(pipe == 2)
+        reg = reg & ~NRF24_ENAA_P2;
+    else if(pipe == 3)
+        reg = reg & ~NRF24_ENAA_P3;
+    else if(pipe == 4)
+        reg = reg & ~NRF24_ENAA_P4;
+    else if(pipe == 5)
+        reg = reg & ~NRF24_ENAA_P5;
+    else return false;
+    spiWriteRegister(NRF24_REG_01_EN_AA, reg);
+    return isAutoAckEnabled(pipe);
+}
+
 boolean NRF24::isAutoAckEnabled(uint8_t pipe){
     uint8_t reg = spiReadRegister(NRF24_REG_01_EN_AA);
     if(pipe == 0)
@@ -403,7 +444,6 @@ boolean NRF24::setRF(NRF24DataRate data_rate, NRF24TransmitPower power) {
     else if (data_rate == NRF24DataRate2Mbps)
         value |= NRF24_RF_DR_HIGH;
     // else NRF24DataRate1Mbps, 00
-    Serial.println(value, BIN);
     spiWriteRegister(NRF24_REG_06_RF_SETUP, value);
     NRF24DataRate actrate = getDatarate();
     NRF24TransmitPower actpow = getTransmitPower();
@@ -438,21 +478,27 @@ NRF24::NRF24TransmitPower NRF24::getTransmitPower(){
 }
 
 boolean NRF24::powerDown() {
-    spiWriteRegister(NRF24_REG_00_CONFIG, _crc);
+    uint8_t reg = spiReadRegister(NRF24_REG_00_CONFIG);
+    reg = reg &  ~NRF24_PWR_UP; //set the power up bit to 0
+    spiWriteRegister(NRF24_REG_00_CONFIG, reg);
     digitalWrite(_chipEnablePin, LOW);
     return true;
 }
 
 boolean NRF24::powerUpRx() {
-    spiWriteRegister(NRF24_REG_00_CONFIG, _crc | NRF24_PWR_UP | NRF24_PRIM_RX);
+    uint8_t reg = spiReadRegister(NRF24_REG_00_CONFIG);
+    reg = reg | NRF24_PWR_UP | NRF24_PRIM_RX;
+    spiWriteRegister(NRF24_REG_00_CONFIG, reg);
     digitalWrite(_chipEnablePin, HIGH);
     return true;
 }
 
 boolean NRF24::powerUpTx() {
-    // Its the pulse high that puts us into TX mode
+    uint8_t reg = spiReadRegister(NRF24_REG_00_CONFIG);
+    reg = reg | NRF24_PWR_UP & ~NRF24_PRIM_RX;
+    // Its the pulse high that actually starts the transmission
     digitalWrite(_chipEnablePin, LOW);
-    spiWriteRegister(NRF24_REG_00_CONFIG, _crc | NRF24_PWR_UP);
+    spiWriteRegister(NRF24_REG_00_CONFIG, reg);
     digitalWrite(_chipEnablePin, HIGH);
     return true;
 }
@@ -525,12 +571,14 @@ boolean NRF24::recv(uint8_t* pipe, uint8_t* buf, uint8_t* len) {
 	return false;
     // 32 microsecs (if immediately available)
     *len = spiRead(NRF24_COMMAND_R_RX_PL_WID);
+    uint8_t pipen = (spiReadRegister(NRF24_REG_07_STATUS) & NRF24_RX_P_NO) >> 1;
+
+    if(pipen > 5) return false;
+    else *pipe = pipen;
     // 44 microsecs
     spiBurstRead(NRF24_COMMAND_R_RX_PAYLOAD, buf, *len);
     // 140 microsecs (32 octet payload)
-    uint8_t reg = (spiReadRegister(NRF24_REG_07_STATUS) & NRF24_RX_P_NO) >> 1;
-    if(reg > 5) return false;
-    else *pipe = reg;
+
     return true;
 }
 
@@ -543,4 +591,48 @@ void NRF24::printRegisters(){
 	 Serial.println(spiReadRegister(i), HEX);
     }
 }
+
+void NRF24::setReceivedPacketHandler(uint8_t pipe, void (*h)(uint8_t * pkt, uint8_t len)){
+    pipehandlers[pipe] = h;
+}
+
+void NRF24::handleIRQ(){
+    Serial.print('!');
+    uint8_t status = spiReadRegister(NRF24_REG_07_STATUS);
+    if((status & NRF24_RX_DR) != 0){
+        //Fetch the packet
+        spiWriteRegister(NRF24_REG_07_STATUS, NRF24_RX_DR); //Clear read interrupt
+        uint8_t len = spiRead(NRF24_COMMAND_R_RX_PL_WID);
+        if (len > 32) { //Discard packets with more than 32 bytes
+            flushRx();
+            return;
+        }
+        uint8_t buf[len];
+        spiBurstRead(NRF24_COMMAND_R_RX_PAYLOAD, buf, len);
+        uint8_t pipe = ((spiReadRegister(NRF24_REG_07_STATUS) & NRF24_RX_P_NO) >> 1);
+        if((pipe <6) && (pipehandlers[pipe] != NULL)){
+            pipehandlers[pipe](buf, len);
+        } //If no handler is found, the packet is lost
+    }
+}
+
+void handle() {
+    NRF24::handleIRQ();
+}
+
+void NRF24::enableReceiveISR(uint8_t pin){
+    //We are only interested into RX interrupts, we mask the others:
+    uint8_t reg = spiReadRegister(NRF24_REG_00_CONFIG);
+    reg = reg | NRF24_MASK_MAX_RT | NRF24_MASK_TX_DS & ~NRF24_MASK_RX_DR;
+    spiWriteRegister(NRF24_REG_00_CONFIG, reg);
+    //Attach ISR
+    //numbers: 0 (on digital pin 2) and 1 (on digital pin 3)
+    if(pin == 2) attachInterrupt(0, handle, RISING);
+    else attachInterrupt(1, handle, RISING);
+    //Activate interrupts, in case they aren't
+    interrupts();
+}
+
+
+
 

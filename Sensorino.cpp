@@ -1,53 +1,127 @@
 #include "Sensorino.h"
 #include "NRF24.h"
 
-Sensorino::Sensorino(uint8_t chipEnablePin, uint8_t chipSelectPin,
-                     char* broadcastAdd, char* thisAdd)
-                     : NRF24 (chipEnablePin, chipSelectPin)
-{
-    broadCastAddress = broadcastAdd;
-    thisAddress = thisAdd;
+/** Default addresses.
+ */
+byte Sensorino::broadCastAddress[4] = {BROADCAST_ADDR};
+byte Sensorino::baseAddress[4] = {BASE_ADDR};
+byte Sensorino::thisAddress[4] = {1,2,3,4};
 
+void Sensorino::configure(byte chipEnablePin, byte chipSelectPin, byte myAdd[]) {
+    NRF24::configure(chipEnablePin, chipSelectPin);
+    thisAddress[0] = myAdd[0];
+    thisAddress[1] = myAdd[1];
+    thisAddress[2] = myAdd[2];
+    thisAddress[3] = myAdd[3];
 }
 
-Sensorino::Sensorino(char* thisAdd)
-                     : NRF24 (9, 10)
-{
-    broadCastAddress = "BRCS";
-    thisAddress = thisAdd;
-}
-
-boolean Sensorino::init()
+void Sensorino::init()
 {
     //Init the nrf24
     NRF24::init();
-    //set addresses
-    //setThisAddress(reinterpret_cast<uint8*>(thisAdd),3);
+    setChannel(RF_CHANNEL);
+    //set dynamic payload size
+    setPayloadSize(0, 0);
+    setPayloadSize(1, 0);
+    //Set address size to 4
+    setAddressSize(NRF24::NRF24AddressSize4Bytes);
+    //Set CRC to 2 bytes
+    setCRC(NRF24::NRF24CRC2Bytes);
+    //Set 2 Mbps, maximum power
+    setRF(NRF24::NRF24DataRate2Mbps, NRF24::NRF24TransmitPower0dBm);
+    //Configure pipes
+    setPipeAddress(0, broadCastAddress);
+    enablePipe(0);
+    disableAutoAck(0);
+
+    setPipeAddress(1, thisAddress);
+    enablePipe(1);
+    enableAutoAck(1);
+
+    //Configure retries
+    setTXRetries(3, 3);
 }
 
-int Sensorino::readVcc() {
-  long result;
-  // Read 1.1V reference against AVcc
-  ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
-  delay(2); // Wait for Vref to settle
-  ADCSRA |= _BV(ADSC); // Convert
-  while (bit_is_set(ADCSRA,ADSC));
-  result = ADCL;
-  result |= ADCH<<8;
-  result = 1126400L / result; // Back-calculate AVcc in mV
-  return (int) result;
+
+boolean Sensorino::sendToBase(unsigned int service, byte* data, int len){
+    setTransmitAddress(baseAddress, true);
+    byte pkt[6+len];
+    composeBasePacket(pkt, service, data, len);
+    return send(pkt, 6+len, false);
+}
+
+boolean Sensorino::sendToBroadcast(unsigned int service, byte* data, int len){
+    setTransmitAddress(broadCastAddress, false);
+    byte pkt[6+len];
+    composeBasePacket(pkt, service, data, len);
+    return send(pkt, 6+len, true);
 }
 
 
-int Sensorino::readTemp() {
-  long result;
-  // Read temperature sensor against 1.1V reference
-  ADMUX = _BV(REFS1) | _BV(REFS0) | _BV(MUX3);
-  delay(2); // Wait for Vref to settle
-  ADCSRA |= _BV(ADSC); // Convert
-  while (bit_is_set(ADCSRA,ADSC));
-  result = ADCL;
-  result |= ADCH<<8;
-  result = (result - 125) * 1075;
-  return (int) result;
+boolean Sensorino::receive(unsigned int timeout, byte* pipe, byte* sender,
+                           unsigned int* service, byte* data, int* len){
+    byte buffer[NRF24_MAX_MESSAGE_LEN];
+    byte totlen;
+    if(waitAvailableTimeout(timeout)){
+            if(sensorino.recv(pipe, buffer, &totlen)){
+                sensorino.decomposeBasePacket(buffer, totlen, sender, service, data, len);
+            return true;
+        }
+    }
+    return false;
 }
+
+
+void Sensorino::composeBasePacket(byte* buffer, unsigned int service, byte* data, int len){
+    int totlen = 6 + len;
+    buffer[0] = thisAddress[0];
+    buffer[1] = thisAddress[1];
+    buffer[2] = thisAddress[2];
+    buffer[3] = thisAddress[3];
+    buffer[4] = service & 0xFF ;
+    buffer[5] = (service >> 8) & 0xFF;
+    for(int i=0; i<len;i++){
+     buffer[i+6] = data[i];
+    }
+
+    Serial.print("composing packet: sender ");
+    Serial.print(buffer[0]);Serial.print(".");
+    Serial.print(buffer[1]);Serial.print(".");
+    Serial.print(buffer[2]);Serial.print(".");
+    Serial.print(buffer[3]);
+    Serial.print(" service ");
+    Serial.print(buffer[4], HEX);Serial.print(".");
+    Serial.print(buffer[5], HEX);
+    Serial.print(" data ");
+    for(int i=0; i<len;i++){
+     Serial.print(buffer[i+6]);Serial.print(".");
+    }
+    Serial.println();
+}
+
+void Sensorino::decomposeBasePacket(byte* packet, int totlen, byte* sender,
+                                    unsigned int* service, byte* data, int* len){
+    sender[0] = packet[0];
+    sender[1] = packet[1];
+    sender[2] = packet[2];
+    sender[3] = packet[3];
+    *service = (unsigned int)(packet[4] <<8) + (unsigned int)packet[5];
+    *len = totlen -6;
+    for(int i=0; i<*len; i++){
+     data[i] = packet[i+6];
+    }
+
+    Serial.print("decomposing packet: sender ");
+    Serial.print(sender[0]);Serial.print(".");
+    Serial.print(sender[1]);Serial.print(".");
+    Serial.print(sender[2]);Serial.print(".");
+    Serial.print(sender[3]);
+    Serial.print(" service ");
+    Serial.print(packet[4], HEX);Serial.print(".");
+    Serial.print(packet[5], HEX);
+    for(int i=0; i<*len; i++){
+     Serial.print(data[i]);Serial.print(".");
+    }
+    Serial.println();
+}
+

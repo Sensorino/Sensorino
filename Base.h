@@ -1,4 +1,4 @@
-/** Sensorino library.
+/** Base library.
  * This library abstracts the nRF24L01.
  * Decisions taken:
  * - pipe 0 is used as broadcast pipe, with shared address and no acks
@@ -12,36 +12,19 @@
  *
  * Licensed under the GPL license http://www.gnu.org/copyleft/gpl.html
  */
-
-#ifndef SENSORINO_h
-#define SENSORINO_h
+#ifndef BASE_h
+#define BASE_h
 
 #include "NRF24.h"
+#include "Sensorino.h"
+#include "Services.h"
 
-//The pipe used for broadcast messages
-#define BROADCAST_PIPE 0
-
-//Default broadcast address
-#define BROADCAST_ADDR 0,255,0,255
-
-//The pipe used for private messages
-#define PRIVATE_PIPE 1
-
-//Default adrress of the base station
-#define BASE_ADDR 255,0,255,0
-
-//Default radio channel
-#define RF_CHANNEL 10
-
-/** Sensorino, library that builds on top of the nRF24L01 chip.
- *
- *
+/** Base, a base for sensorionos.
+ * Builds on top of the nRF24L01 chip.
  *
  */
-class Sensorino : public NRF24
+class Base : public NRF24
 {
-    friend class Base;
-
     public:
 
         /** The broadcast address. Default is 0 255 0 255
@@ -52,17 +35,12 @@ class Sensorino : public NRF24
          */
         static byte baseAddress[4];
 
-        /** The address of this node
-         */
-        static byte thisAddress[4];
-
         /** Configures Sensorino.
          * init() must be called to initialise the interface and the radio module
          * @param chipEnablePin the Arduino pin to use to enable the chip for transmit/receive
          * @param chipSelectPin the Arduino pin number of the output to use to select the NRF24 before
-         * @param myAddress the address of this node
          */
-        static void configure(byte chipEnablePin, byte chipSelectPin, byte myAddress[]);
+        static void configure(byte chipEnablePin, byte chipSelectPin);
 
         /** Initialises this instance and the radio module connected to it.
          * Initializes the SPI
@@ -70,13 +48,14 @@ class Sensorino : public NRF24
          */
         static void init();
 
-        /** Sends a packet to the base.
+        /** Sends a packet to a sensorino.
+         * @param address the address of the receiver
          * @param service the service id
          * @param data data associated
          * @param len the length of the data
          * @return true on success
          */
-        static boolean sendToBase(unsigned int service, byte* data, int len);
+        static boolean sendToSensorino(byte address[],word service, byte* data, int len);
 
         /** Sends a packet to broadcast.
          * @param service the service id
@@ -84,7 +63,7 @@ class Sensorino : public NRF24
          * @param len the length of the data
          * @return true on success
          */
-        static boolean sendToBroadcast(unsigned int service, byte* data, int len);
+        static boolean sendToBroadcast(word service, byte* data, int len);
 
         /** Waits to receive a packet on a pipe, if received it extracts sender and service.
          * @param timeout a timeout in millis
@@ -97,28 +76,47 @@ class Sensorino : public NRF24
          */
         static boolean receive(unsigned int timeout, byte* pipe, byte* sender, unsigned int* service, byte* data, int* len);
 
+
+        ///////////////////////////////
+        // Server side communication //
+        ///////////////////////////////
+        /** Reads a line from the serial.
+         * @param buffer needs a buffer where to store characters
+         * @return a String object
+         */
+        String readLineFromSerial(char* buffer);
+
+        /** Interprets lines sent by the server over Serial port.
+         * @param line the received line
+         */
+        void parseServerLine(String line);
+
+        //Time protocol
+
+        /** Time protocol with server through serial.
+         * Arduino sends #getTime
+         * Server answers: #time 1391429779 (seconds since Jan 01 1970)
+         * Arduino sets internal time
+         */
+        void askServerTime();
+
+        /** Time protocol with server through serial.
+         * Arduino sends #getTime
+         * Server answers: #time 1391429779 (seconds since Jan 01 1970)
+         * Arduino sets internal time
+         */
+        void parseServerTime(String line);
+
+
+
     protected:
 
     private:
-
-        /** Composes the base packet with sender information.
-         */
-        static void composeBasePacket(byte* buffer, unsigned int service, byte* data, int len);
-
-        /** Decomposes the base packet.
-         * @param packet the raw packet
-         * @param totlen the length of the raw packet
-         * @param sender a buffer where the sender address will be written, must be of size 4
-         * @param service the service number
-         * @param data a buffer where the data will be written. Must be of size 26.
-         * @param len the length of the data without base packet
-         */
-        static void decomposeBasePacket(byte* packet, int totlen, byte* sender, unsigned int* service, byte* data, int* len);
 
 };
 
 /** THE instance, Arduino style
  */
-extern Sensorino sensorino;
+extern Base base;
 
-#endif // SENSORINO_h
+#endif // BASE_h

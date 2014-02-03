@@ -176,8 +176,7 @@
  * On transmission, the addresses of this node defaults to 0x0000000000, unless changed.
  * The radio is configured to use Enhanced Shockburst with retransmits.
  */
-class NRF24
-{
+class NRF24 {
 public:
 
     /** Defines convenient values for setting data rates in setRF()
@@ -218,14 +217,13 @@ public:
         NRF24AddressSize5Bytes =3 /**< 5 bytes */
     } NRF24AddressSize;
 
-    /** Constructor. Multiple instances are allowed with its own
-     * chip enable and slave select pin.
+    /** Configures the pins used for chip enable and chip select.
      * init() must be called to initialise the interface and the radio module
      * @param chipEnablePin the Arduino pin to use to enable the chip for transmit/receive
      * @param chipSelectPin the Arduino pin number of the output to use to select the NRF24 before
      * accessing it
      */
-    NRF24(uint8_t chipEnablePin = 9, uint8_t chipSelectPin = 10);
+    static void configure(uint8_t chipEnablePin = 9, uint8_t chipSelectPin = 10);
 
     /** Initialises this instance and the radio module connected to it.
      * The following steps are taken:
@@ -237,28 +235,36 @@ public:
      * - Power down the chip
      * @return  true if everything was successful
      */
-    boolean init();
+    static boolean init();
 
     /** Tells if the chip is powered up or sleeping.
      * @return true if powered up
      */
-    boolean isPoweredUp();
+    static boolean isPoweredUp();
 
     /** Sets the transmit and receive channel number.
      * The frequency used is (2400 + channel) MHz
      * @return true on success
      */
-    boolean setChannel(uint8_t channel);
+    static boolean setChannel(uint8_t channel);
 
     /** Gets the transmission channel.
      *  @return channel
      */
-    uint8_t getChannel();
+    static uint8_t getChannel();
 
     /** Gets the Received Power Detector.
      * @return 1 or 0
      */
-    boolean getRPD();
+    static boolean getRPD();
+
+    /** Get RSSI is an attempt to measure the received signal strength.
+     * It calls getRPD() 256 times and sums all times the function was true.
+     * All received packets are flushed.
+     * @return 0 if no signal above -64DBm has been observed,
+     * 255 if it has been observed all the time
+     */
+    static uint8_t getRSSI();
 
     /** Sets the number of bytes used for CRC.
      * By default it's 1 byte CRC.
@@ -266,23 +272,23 @@ public:
      * @param crc The number of bytes to be used. Use NRF24CRC enum
      * @return true on success
      */
-    boolean setCRC(NRF24CRC crc);
+    static boolean setCRC(NRF24CRC crc);
 
     /** Gets the CRC as set in the chip
      * @return the CRC setting as NRF24CRC
      */
-    NRF24CRC getCRC();
+    static NRF24CRC getCRC();
 
     /** Sets the size of the address: 3,4 or 5 bytes.
      * @param size use the enum NRF24AddressSize
      * @return true on success
      */
-    boolean setAddressSize(NRF24AddressSize size);
+    static boolean setAddressSize(NRF24AddressSize size);
 
     /** Gets the actual address size as in the register.
      * @return the size of the address
      */
-    NRF24AddressSize getAddressSize();
+    static NRF24AddressSize getAddressSize();
 
     /** Set the Auto Retransmit Delay and Auto Retransmit Count
      * for Auto retransmission (ART). See section 7.4.2 in the NRF24 documentation
@@ -294,7 +300,7 @@ public:
      * @param count The number of retries to us.
      * @return true on success
      */
-    boolean setTXRetries(uint8_t delay, uint8_t count = 3);
+    static boolean setTXRetries(uint8_t delay, uint8_t count = 3);
 
     /** Sets the next transmit address.
      * Uses this address in TX address and RX pipe 0 if ShockBurst is enabled
@@ -303,14 +309,14 @@ public:
      * @param autoack set to true if autoack is expected
      * @return true on success
      */
-    boolean setTransmitAddress(uint8_t* address, boolean autoack);
+    static boolean setTransmitAddress(uint8_t* address, boolean autoack);
 
     /** Gets the current transmit address.
      * @param addr a buffer where to store the address,
      * length must be the same as the actual address size.
      * @return true on success
      */
-    boolean getTransmitAddress(uint8_t * addr);
+    static boolean getTransmitAddress(uint8_t * addr);
 
     /** Sets the first len bytes of the address for the given NRF24 receiver pipe.
      * In case of pipe 2,3,4,5 it only sets the LSB, the rest is taken from pipe 1.
@@ -319,7 +325,7 @@ public:
      * The size must be the same as the actual one.
      * @return true on success
      */
-    boolean setPipeAddress(uint8_t pipe, uint8_t* address);
+    static boolean setPipeAddress(uint8_t pipe, uint8_t* address);
 
     /** Gets the address of the specified pipe.
      * @param pipe the pipe number, from 0 to 5
@@ -327,32 +333,38 @@ public:
      * the size must be the same as the actual address size
      * @return an array filled with the address, use getAddressSize to know the length
      */
-    boolean getPipeAddress(uint8_t pipe, uint8_t * addr);
+    static boolean getPipeAddress(uint8_t pipe, uint8_t * addr);
 
     /** Enables a pipe to receive data.
      * @param pipe the pipe number, from 0 to 5
      * @param autoAck enablesEnhanced Shockburst
      * @return true if it worked
      */
-    boolean enablePipe(uint8_t pipe);
+    static boolean enablePipe(uint8_t pipe);
 
     /** Says if the pipe is enabled.
      * @param pipe pipe number from 0 to 5
      * @return true if enabled
      */
-    boolean isPipeEnabled(uint8_t pipe);
+    static boolean isPipeEnabled(uint8_t pipe);
 
     /** Enables auto acknoweldgment (Shockburst) on the pipe.
      * @param pipe pipe number
      * @return true if success
      */
-    boolean enableAutoAck(uint8_t pipe);
+    static boolean enableAutoAck(uint8_t pipe);
+
+    /** Disables auto acknoweldgment (Shockburst) on the pipe.
+     * @param pipe pipe number
+     * @return true if success
+     */
+    static boolean disableAutoAck(uint8_t pipe);
 
     /** Tells if the pipe is wokring with auto ack.
      * @param pipe pipe number
      * @return true if enabled
      */
-    boolean isAutoAckEnabled(uint8_t pipe);
+    static boolean isAutoAckEnabled(uint8_t pipe);
 
     /** Sets the number of bytes transmitted
      * in each payload
@@ -361,48 +373,48 @@ public:
      * 0 means dynamic payload
      * @return true on success
      */
-    boolean setPayloadSize(uint8_t pipe, uint8_t size);
+    static boolean setPayloadSize(uint8_t pipe, uint8_t size);
 
     /** Gets the size of the payload of a pipe.
      * @param pipe the pipe number
      * @return the size, 0 if set to dynamic
      */
-    uint8_t getPayloadSize(uint8_t pipe);
+    static uint8_t getPayloadSize(uint8_t pipe);
 
     /** Sets the data rate and tranmitter power to use
      * @param data_rate The data rate to use for all packets transmitted and received. One of NRF24DataRate
      * @param power Transmitter power. One of NRF24TransmitPower.
      * @return true on success
      */
-    boolean setRF(NRF24DataRate data_rate, NRF24TransmitPower power);
+    static boolean setRF(NRF24DataRate data_rate, NRF24TransmitPower power);
 
     /** Gets the current data rate.
      * @return the data rate as NRF24DataRate
      */
-    NRF24DataRate getDatarate();
+    static NRF24DataRate getDatarate();
 
     /** Gets the current transmission power.
      * @return returns the NRF24TransmitPower enum
      */
-    NRF24TransmitPower getTransmitPower();
+    static NRF24TransmitPower getTransmitPower();
 
     /** Sets the radio in power down mode.
      * Sets chip enable to LOW.
      * @return true on success
      */
-    boolean powerDown();
+    static boolean powerDown();
 
     /** Sets the radio in RX mode.
      * Sets chip enable to HIGH to enable the chip in RX mode.
      * @return true on success
      */
-    boolean powerUpRx();
+    static boolean powerUpRx();
 
     /** Sets the radio in TX mode.
      * Pulses the chip enable LOW then HIGH to enable the chip in TX mode.
      * @return true on success
      */
-    boolean powerUpTx();
+    static boolean powerUpTx();
 
     /** Sends data to the address set by setTransmitAddress(). Blocks until the current message (if any)
      * has been transmitted.
@@ -413,7 +425,7 @@ public:
      * @param noack Optional parameter if true sends the message NOACK mode.
      * @return true on success
      */
-    boolean send(uint8_t* data, uint8_t len, boolean noack = false);
+    static boolean send(uint8_t* data, uint8_t len, boolean noack = false);
 
     /** Sends a packet but does not wait after.
      * Sets the radio to TX mode.
@@ -423,31 +435,31 @@ public:
      * @param noack Optional parameter if true sends the message NOACK mode.
      * @return true on success
      */
-    void asyncSend(uint8_t* data, uint8_t len, boolean noack = false);
+    static void asyncSend(uint8_t* data, uint8_t len, boolean noack = false);
 
     /** Indicates if the chip is in transmit mode and
      * there is a packet currently being transmitted
      * @return true if the chip is in transmit mode and there is a transmission in progress
      */
-    boolean isSending();
+    static boolean isSending();
 
     /** Checks whether a received message is available.
      * This can be called multiple times in a timeout loop
      * @return true if a complete, valid message has been received and is able to be retrieved by
      * recv()
      */
-    boolean available();
+    static boolean available();
 
     /** Starts the receiver and blocks until a valid received
      * message is available.
      */
-    void  waitAvailable();
+    static void waitAvailable();
 
     /** Starts the receiver and blocks until a received message is available or a timeout
      * @param timeout Maximum time to wait in milliseconds.
      * @return true if a message is available
      */
-    boolean waitAvailableTimeout(uint16_t timeout);
+    static boolean waitAvailableTimeout(uint16_t timeout);
 
     /** Turns the receiver on if it not already on.
      * If there is a valid message available, copy it to buf and return true
@@ -460,42 +472,62 @@ public:
      * @param len Pointer to available space in buf. Set to the actual number of octets copied.
      * @return true if a valid message was copied to buf
      */
-    boolean recv(uint8_t* pipe, uint8_t* buf, uint8_t* len);
+    static boolean recv(uint8_t* pipe, uint8_t* buf, uint8_t* len);
 
-#ifdef DEBUG
-     /** Prints the value of all chip registers
+    /** Sets a handler for received packets on a certain pipe.
+     * You need to call enableISR first.
+     * @param h is the handler, a function that has (uint8_t * pkt, uint8_t len) as arguments
+     * pkt is where the packet is provided and len the length of the packet
+     * @param pipe is the pipe number where to register
+     */
+    static void setReceivedPacketHandler(uint8_t pipe, void (*h)(uint8_t * pkt, uint8_t len));
+
+    /** Enables asyncrhonous receive with IRQ.
+     * Indicates the pin where the IRQ is connected to,
+     * on ATmega 328p it can D2 or D3
+     */
+    static void enableReceiveISR(uint8_t pin);
+
+    /** Prints the value of all chip registers
      * for debugging purposes
      * @return true on success
      */
-    void printRegisters();
-#endif
+    static void printRegisters();
+
+
+    /** Handles the IRQ.
+     * Shouldn't be of any use outside of this library.
+     */
+    static void handleIRQ();
 
 protected:
 
 private:
-    uint8_t _crc;
-    uint8_t _chipEnablePin;
-    uint8_t _chipSelectPin;
+    static uint8_t _chipEnablePin;
+    static uint8_t _chipSelectPin;
 
+    /** Handlers of received packet, one per pipe.
+     */
+    static void (*pipehandlers[6])(uint8_t * pkt, uint8_t len);
 
     /** Execute an SPI command that requires neither reading or writing
      * @param command the SPI command to execute, one of NRF24_COMMAND_*
      * @return the value of the device status register
      */
-    uint8_t spiCommand(uint8_t command);
+    static uint8_t spiCommand(uint8_t command);
 
     /** Reads a single command byte from the NRF24
      * @param command Command number, one of NRF24_COMMAND_*
      * @return the single byte returned by the command
      */
-    uint8_t spiRead(uint8_t command);
+    static uint8_t spiRead(uint8_t command);
 
     /** Writes a single command byte to the NRF24
      * @param command Command number, one of NRF24_COMMAND_*
      * @param val The value to write
      * @return the value of the device status register
      */
-    uint8_t spiWrite(uint8_t command, uint8_t val);
+    static uint8_t spiWrite(uint8_t command, uint8_t val);
 
     /** Reads a number of consecutive bytes from a command using burst read mode
      * @param command Command number of NRF24_COMMAND_*
@@ -503,7 +535,7 @@ private:
      * @param len Number of bytes to read
      * @return the value of the device status register
      */
-    void spiBurstRead(uint8_t command, uint8_t* dest, uint8_t len);
+    static void spiBurstRead(uint8_t command, uint8_t* dest, uint8_t len);
 
     /** Write a number of consecutive bytes to a command using burst write mode
      * @param command Command number of the first register, one of NRF24_COMMAND_*
@@ -511,20 +543,20 @@ private:
      * @param len Number of bytes to write
      * @return the value of the device status register
      */
-    uint8_t spiBurstWrite(uint8_t command, uint8_t* src, uint8_t len);
+    static uint8_t spiBurstWrite(uint8_t command, uint8_t* src, uint8_t len);
 
     /** Reads a single register from the NRF24
      * @param reg Register number, one of NRF24_REG_*
      * @return The value of the register
      */
-    uint8_t spiReadRegister(uint8_t reg);
+    static uint8_t spiReadRegister(uint8_t reg);
 
     /** Writes a single byte to the NRF24, and at the ame time reads the current STATUS register
      * @param reg Register number, one of NRF24_REG_*
      * @param val The value to write
      * @return the current STATUS (read while the command is sent)
      */
-    uint8_t spiWriteRegister(uint8_t reg, uint8_t val);
+    static uint8_t spiWriteRegister(uint8_t reg, uint8_t val);
 
     /** Reads a number of consecutive registers from the NRF24 using burst read mode
      * @param reg Register number of the first register, one of NRF24_REG_*
@@ -532,7 +564,7 @@ private:
      * @param len Number of bytes to read
      * @return the value of the device status register
      */
-    void spiBurstReadRegister(uint8_t reg, uint8_t* dest, uint8_t len);
+    static void spiBurstReadRegister(uint8_t reg, uint8_t* dest, uint8_t len);
 
     /** Write a number of consecutive registers using burst write mode
      * @param reg Register number of the first register, one of NRF24_REG_*
@@ -540,22 +572,22 @@ private:
      * @param len Number of bytes to write
      * @return the value of the device status register
      */
-    uint8_t spiBurstWriteRegister(uint8_t reg, uint8_t* src, uint8_t len);
+    static uint8_t spiBurstWriteRegister(uint8_t reg, uint8_t* src, uint8_t len);
 
     /** Reads and returns the device status register NRF24_REG_02_DEVICE_STATUS
      * @return The value of the device status register
      */
-    uint8_t statusRead();
+    static uint8_t statusRead();
 
     /** Flush the TX FIFOs
      * @return the value of the device status register
      */
-    uint8_t flushTx();
+    static uint8_t flushTx();
 
     /** Flush the RX FIFOs
      * @return the value of the device status register
      */
-    uint8_t flushRx();
+    static uint8_t flushRx();
 
     /** Tells if two addresses are the same.
      * @param addr1 the first address
@@ -563,11 +595,11 @@ private:
      * @param len the length of the address
      * @return true if they are equals
      */
-    boolean areAddressesEquals(uint8_t *addr1, uint8_t* addr2, uint8_t len);
-
-    /** Prints the content of the registers in HEX.
-    */
-    void printRegisters();
+    static boolean areAddressesEquals(uint8_t *addr1, uint8_t* addr2, uint8_t len);
 };
+
+/** THE instance, Arduino style
+ */
+extern NRF24 nRF24;
 
 #endif // NRF24_h
