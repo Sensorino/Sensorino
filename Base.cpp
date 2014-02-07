@@ -76,33 +76,40 @@ void Base::parseServerLine(String line){
 
 //Time protocol:
 void Base::askServerTime(){
-    Serial.println("#getTime");
+    Serial.println("{ \"command\" : \"getTime\" }");
     char buff[100];
     String timestring = readLineFromSerial(buff);
+    if(timestring != NULL)
+    parseServerTime(timestring);
 }
 
 void Base::parseServerTime(String line){
-    String number = line.substring(6);
-    int len = line.length();
-    char buff[len+1];
-    line.toCharArray(buff, len);
-    buff[len]='\0';
-    unsigned long ts = strtoul(buff, NULL, 0);
-    setTime(ts);
+    //Expected format { "time" : 1391796357 }
+    if(line.length() >= 21){
+        String number = line.substring(11);
+        int len = number.length();
+        char buff[len+1];
+        number.toCharArray(buff, len);
+        buff[len]='\0';
+        unsigned long ts = strtoul(buff, NULL, 10);
+        setTime(ts);
+    }
 }
 
 //Internals protocol:
 void Base::serverSendInternals(byte* address, internalsPacket ints){
-    Serial.println("#internals");
-    Serial.print("#address: ");
-    Serial.print(address[0]);Serial.print(".");
-    Serial.print(address[1]);Serial.print(".");
-    Serial.print(address[2]);Serial.print(".");
+    Serial.print("{\"internals\"{ ");
+    Serial.print("\"address\": [");
+    Serial.print(address[0]);Serial.print(",");
+    Serial.print(address[1]);Serial.print(",");
+    Serial.print(address[2]);Serial.print(",");
     Serial.print(address[3]);
-    Serial.print(" temp: ");
+    Serial.print("], \"timestamp\": ");
+    Serial.print(ints.timestamp);
+    Serial.print(", \"temp\": ");
     Serial.print(((float)ints.temp)/1000);
-    Serial.print(" volts: ");
+    Serial.print(", \"volts\": ");
     Serial.print(((float)ints.vcc)/1000);
-    Serial.println();
+    Serial.println(" } }");
 }
 

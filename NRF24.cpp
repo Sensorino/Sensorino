@@ -24,12 +24,14 @@
 //Static init of variables
 uint8_t NRF24::_chipEnablePin = 9;
 uint8_t NRF24::_chipSelectPin = 10;
+uint8_t NRF24::_IRQPin = 2;
 uint8_t * NRF24::pipe0Address = NULL;
 void (* NRF24::pipehandlers[6])(uint8_t * pkt, uint8_t len);
 
-void NRF24::configure(uint8_t chipEnablePin, uint8_t chipSelectPin) {
+void NRF24::configure(uint8_t chipEnablePin, uint8_t chipSelectPin, uint8_t irqPin) {
     _chipEnablePin = chipEnablePin;
     _chipSelectPin = chipSelectPin;
+    _IRQPin = irqPin;
     pinMode(_chipEnablePin, OUTPUT);
     pinMode(_chipSelectPin, OUTPUT);
 }
@@ -473,8 +475,8 @@ void NRF24::asyncSend(uint8_t* data, uint8_t len, boolean noack){
         //Enhanced ShockBurst enabled
         int len = getAddressSize();
         byte addr[len];
-        if(!getTransmitAddress(addr))
-        spiBurstWriteRegister(NRF24_REG_0A_RX_ADDR_P0, addr, len);
+        if(getTransmitAddress(addr))
+            spiBurstWriteRegister(NRF24_REG_0A_RX_ADDR_P0, addr, len);
     }
     spiBurstWrite(noack ? NRF24_COMMAND_W_TX_PAYLOAD_NOACK : NRF24_COMMAND_W_TX_PAYLOAD, data, len);//send data
     //signal send
@@ -491,7 +493,9 @@ boolean NRF24::send(uint8_t* data, uint8_t len, boolean noack) {
     // Wait for either the Data Sent or Max ReTries flag, signalling the
     // end of transmission
     uint8_t status;
-    while (!((status = statusRead()) & (NRF24_TX_DS | NRF24_MAX_RT)))
+    unsigned long starttime = millis();
+    while (((millis() - starttime) < 2000) && //times out after 2 seconds
+           !((status = statusRead()) & (NRF24_TX_DS | NRF24_MAX_RT)))
        ;
 
     // Must clear NRF24_MAX_RT if it is set, else no further comm
@@ -592,14 +596,15 @@ void handle() {
     NRF24::handleIRQ();
 }
 
-void NRF24::enableReceiveISR(uint8_t pin){
+void NRF24::enableReceiveISR(){
     //We are only interested into RX interrupts, we mask the others:
     uint8_t reg = spiReadRegister(NRF24_REG_00_CONFIG);
     reg = reg | NRF24_MASK_MAX_RT | NRF24_MASK_TX_DS & ~NRF24_MASK_RX_DR;
     spiWriteRegister(NRF24_REG_00_CONFIG, reg);
     //Attach ISR
     //numbers: 0 (on digital pin 2) and 1 (on digital pin 3)
-    if(pin == 2) attachInterrupt(0, handle, RISING);
+    pinMode(_IRQPin, INPUT);
+    if(_IRQPin == 2) attachInterrupt(0, handle, RISING);
     else attachInterrupt(1, handle, RISING);
     //Activate interrupts, in case they aren't
     interrupts();

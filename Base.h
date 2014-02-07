@@ -21,6 +21,9 @@
 
 /** Base, a base for sensorionos.
  * Adds communication to a server on the serial line.
+ * Serial line messages are either debugging messages, either JSON messages.
+ * JSON messages always start with { and end with }
+ * In principle JSON messages are sent on one line.
  */
 class Base : public Sensorino
 {
@@ -31,7 +34,7 @@ class Base : public Sensorino
          * @param chipEnablePin the Arduino pin to use to enable the chip for transmit/receive
          * @param chipSelectPin the Arduino pin number of the output to use to select the NRF24 before
          */
-        static void configure(byte chipEnablePin, byte chipSelectPin);
+        static void configure(byte chipEnablePin, byte chipSelectPin, byte irqpin);
 
         /** Initialises this instance and the radio module connected to it.
          * Initializes the SPI
@@ -59,12 +62,12 @@ class Base : public Sensorino
          * @param buffer needs a buffer where to store characters
          * @return a String object
          */
-        String readLineFromSerial(char* buffer);
+        static String readLineFromSerial(char* buffer);
 
         /** Interprets lines sent by the server over Serial port.
          * @param line the received line
          */
-        void parseServerLine(String line);
+        static void parseServerLine(String line);
 
         //Broadcast services:
 
@@ -75,14 +78,14 @@ class Base : public Sensorino
          * Server answers: #time 1391429779 (seconds since Jan 01 1970)
          * Arduino sets internal time
          */
-        void askServerTime();
+        static void askServerTime();
 
         /** Time protocol with server through serial.
          * Arduino sends #getTime
          * Server answers: #time 1391429779 (seconds since Jan 01 1970)
          * Arduino sets internal time
          */
-        void parseServerTime(String line);
+        static void parseServerTime(String line);
 
         //Sensorino to base services:
 
@@ -92,7 +95,7 @@ class Base : public Sensorino
          * @param address the address of the sensorino
          * @param pkt the information
          */
-         void serverSendInternals(byte * address, internalsPacket pkt);
+         static void serverSendInternals(byte * address, internalsPacket pkt);
 
     protected:
 

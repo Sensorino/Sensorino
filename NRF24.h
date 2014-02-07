@@ -221,9 +221,10 @@ public:
      * init() must be called to initialise the interface and the radio module
      * @param chipEnablePin the Arduino pin to use to enable the chip for transmit/receive
      * @param chipSelectPin the Arduino pin number of the output to use to select the NRF24 before
+     * @param IRQpin the pin where the IRQ is received
      * accessing it
      */
-    static void configure(uint8_t chipEnablePin = 9, uint8_t chipSelectPin = 10);
+    static void configure(uint8_t chipEnablePin = 9, uint8_t chipSelectPin = 10, uint8_t IRQpin = 2);
 
     /** Initialises this instance and the radio module connected to it.
      * The following steps are taken:
@@ -480,7 +481,7 @@ public:
      * Indicates the pin where the IRQ is connected to,
      * on ATmega 328p it can D2 or D3
      */
-    static void enableReceiveISR(uint8_t pin);
+    static void enableReceiveISR();
 
     /** Prints the value of all chip registers
      * for debugging purposes
@@ -499,6 +500,7 @@ protected:
 private:
     static uint8_t _chipEnablePin;
     static uint8_t _chipSelectPin;
+    static uint8_t _IRQPin;
     static uint8_t * pipe0Address;
 
     /** Handlers of received packet, one per pipe.

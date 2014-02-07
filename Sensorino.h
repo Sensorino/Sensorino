@@ -43,11 +43,12 @@ typedef struct {
 } timePacket;
 
 /** Internals service: a service that sends information of the Sensorino internals */
-#define INTERNALS_SERVICE 2
+#define INTERNALS_SERVICE 1
 /** Packet containing the measured voltage (*1000) and temperature (*1000) */
 typedef struct {
-    int vcc;
-    int temp;
+    unsigned long timestamp; /**< unix timestamp */
+    int vcc; /**< voltage in millivolts */
+    int temp; /**< temperature in milli C */
 } internalsPacket;
 
 
@@ -76,7 +77,7 @@ class Sensorino : public NRF24
          * @param chipSelectPin the Arduino pin number of the output to use to select the NRF24 before
          * @param myAddress the address of this node
          */
-        static void configure(byte chipEnablePin, byte chipSelectPin, byte myAddress[]);
+        static void configure(byte chipEnablePin, byte chipSelectPin, byte irqpin, byte myAddress[]);
 
         /** Initialises this instance and the radio module connected to it.
          * Initializes the SPI
@@ -144,7 +145,7 @@ class Sensorino : public NRF24
         static void sendInternals();
 
         /** Converts bytes back to internals */
-        internalsPacket parseInternals(byte* data);
+        static internalsPacket parseInternals(byte* data);
 
     protected:
 

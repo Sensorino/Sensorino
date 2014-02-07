@@ -40,10 +40,9 @@ void Sensorino::askTime(){
     byte pipe;
     if(sensorino.receive(2000, &pipe, sender,
                       &receivedService, receivedMessage, &receivedLen)) {
-        if((pipe == BROADCAST_PIPE) && (receivedService == TIME_SERVICE) && (receivedLen>=4)){
+        if((pipe == BROADCAST_PIPE) && (receivedService == TIME_SERVICE) && (receivedLen>=sizeof(internalsPacket))){
             timePacket pkt = *((timePacket *) receivedMessage);
             setTime( pkt.timestamp );
-            //setTime( *((unsigned long *)receivedMessage) );
         }
     }
 }
@@ -51,12 +50,6 @@ void Sensorino::askTime(){
 void Sensorino::serveTime(){
     unsigned long t = getTime();
     if(t != 0){
-        /**byte message[4];
-        message[0]= t & 0xFF;
-        message[1]= (t >> 8) & 0xFF;
-        message[2]= (t >> 16) & 0xFF;
-        message[3]= (t >> 24) & 0xFF;
-        sensorino.sendToBroadcast(TIME_SERVICE, message, 4);*/
         timePacket pkt;
         pkt.timestamp =t;
         sensorino.sendToBroadcast(TIME_SERVICE, (byte *) &pkt, sizeof(pkt));
@@ -65,9 +58,10 @@ void Sensorino::serveTime(){
 
 void Sensorino::sendInternals(){
     internalsPacket pkt;
+    pkt.timestamp = getTime();
     pkt.vcc = readVcc();
     pkt.temp = readTemp();
-    sensorino.sendToBase(INTERNALS_SERVICE, (byte*)&pkt, 4);
+    sensorino.sendToBase(INTERNALS_SERVICE, (byte*)&pkt, sizeof(internalsPacket));
 }
 
 internalsPacket Sensorino::parseInternals(byte* data){
@@ -84,6 +78,8 @@ int Sensorino::readVcc() {
   result = ADCL;
   result |= ADCH<<8;
   result = 1126400L / result; // Back-calculate AVcc in mV
+  Serial.print("My voltage: ");
+  Serial.println(result);
   return (int) result;
 }
 
@@ -98,5 +94,7 @@ int Sensorino::readTemp() {
   result = ADCL;
   result |= ADCH<<8;
   result = (result - 125) * 1075;
+  Serial.print("My temperature: ");
+  Serial.println(result);
   return (int) result;
 }
