@@ -1,56 +1,63 @@
-#include "Base.h"
-
-byte Base::broadCastAddress[4] = {BROADCAST_ADDR};
-byte Base::baseAddress[4] = {BASE_ADDR};
+/** Sensorino library.
+ * This library abstracts the nRF24L01.
+ * Decisions taken:
+ * - pipe 0 is used as broadcast pipe, with shared address and no acks
+ * - pipe 1 is used as private address
+ * - nodes send their address
+ * - addresses are 4 bytes long
+ * - CRC is 2 bytes
+ * - 2Mbps, 750us ack time, 3 retries
+ * The library also implements a set of "services" on top of basic communication means.
+ *
+ * Author: Dario Salvi (dariosalvi78 at gmail dot com)
+ *
+ * Licensed under the GPL license http://www.gnu.org/copyleft/gpl.html
+ */
+ #include "Base.h"
 
 void Base::configure(byte chipEnablePin, byte chipSelectPin) {
     NRF24::configure(chipEnablePin, chipSelectPin);
 }
 
-void Base::init()
+boolean Base::init()
 {
     //Init the nrf24
     NRF24::init();
-    setChannel(RF_CHANNEL);
+    if(!setChannel(RF_CHANNEL))return false;
     //set dynamic payload size
-    setPayloadSize(0, 0);
-    setPayloadSize(1, 0);
+    if(!setPayloadSize(0, 0))return false;
+    if(!setPayloadSize(1, 0))return false;
     //Set address size to 4
-    setAddressSize(NRF24::NRF24AddressSize4Bytes);
+    if(!setAddressSize(NRF24::NRF24AddressSize4Bytes))return false;
     //Set CRC to 2 bytes
-    setCRC(NRF24::NRF24CRC2Bytes);
+    if(!setCRC(NRF24::NRF24CRC2Bytes))return false;
     //Set 2 Mbps, maximum power
-    setRF(NRF24::NRF24DataRate2Mbps, NRF24::NRF24TransmitPower0dBm);
+    if(!setRF(NRF24::NRF24DataRate2Mbps, NRF24::NRF24TransmitPower0dBm))return false;
     //Configure pipes
-    setPipeAddress(0, broadCastAddress);
-    enablePipe(0);
-    disableAutoAck(0);
+    if(!setPipeAddress(0, broadCastAddress))return false;
+    if(!enablePipe(0))return false;
+    if(!setAutoAck(0, false))return false;
 
-    setPipeAddress(1, baseAddress);
-    enablePipe(1);
-    enableAutoAck(1);
+    if(!setPipeAddress(1, baseAddress))return false;
+    if(!enablePipe(1))return false;
+    if(!setAutoAck(1, true))return false;
 
     //Configure retries
-    setTXRetries(3, 3);
+    if(!setTXRetries(3, 3))return false;
 
     //Starts listening
-    powerUpRx();
+    if(!powerUpRx())return false;
+
+    return true;
 }
 
 boolean Base::sendToSensorino(byte address[], word service, byte* data, int len){
-    setTransmitAddress(address, true);
+    setTransmitAddress(address);
     byte pkt[6+len];
-    sensorino.composeBasePacket(pkt, service, data, len);
+    composeBasePacket(pkt, service, data, len);
     return send(pkt, 6+len, false);
 }
 
-boolean Base::sendToBroadcast(word service, byte* data, int len){
-    return sensorino.sendToBroadcast(service, data, len);
-}
-
-boolean Base::receive(unsigned int timeout, byte* pipe, byte* sender, unsigned int* service, byte* data, int* len){
-    return sensorino.receive(timeout, pipe, sender, service, data, len);
-}
 
 String Base::readLineFromSerial(char* buffer){
     int chars = Serial.readBytesUntil('\n', buffer, 100);
@@ -81,6 +88,21 @@ void Base::parseServerTime(String line){
     line.toCharArray(buff, len);
     buff[len]='\0';
     unsigned long ts = strtoul(buff, NULL, 0);
-    service.setTime(ts);
+    setTime(ts);
+}
+
+//Internals protocol:
+void Base::serverSendInternals(byte* address, internalsPacket ints){
+    Serial.println("#internals");
+    Serial.print("#address: ");
+    Serial.print(address[0]);Serial.print(".");
+    Serial.print(address[1]);Serial.print(".");
+    Serial.print(address[2]);Serial.print(".");
+    Serial.print(address[3]);
+    Serial.print(" temp: ");
+    Serial.print(((float)ints.temp)/1000);
+    Serial.print(" volts: ");
+    Serial.print(((float)ints.vcc)/1000);
+    Serial.println();
 }
 

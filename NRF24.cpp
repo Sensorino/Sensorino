@@ -24,11 +24,14 @@
 //Static init of variables
 uint8_t NRF24::_chipEnablePin = 9;
 uint8_t NRF24::_chipSelectPin = 10;
+uint8_t * NRF24::pipe0Address = NULL;
 void (* NRF24::pipehandlers[6])(uint8_t * pkt, uint8_t len);
 
 void NRF24::configure(uint8_t chipEnablePin, uint8_t chipSelectPin) {
     _chipEnablePin = chipEnablePin;
     _chipSelectPin = chipSelectPin;
+    pinMode(_chipEnablePin, OUTPUT);
+    pinMode(_chipSelectPin, OUTPUT);
 }
 
 boolean NRF24::init() {
@@ -263,16 +266,8 @@ boolean NRF24::areAddressesEquals(uint8_t *addr1, uint8_t* addr2, uint8_t len){
     return true;
 }
 
-boolean NRF24::setTransmitAddress(uint8_t* address, boolean autoack) {
+boolean NRF24::setTransmitAddress(uint8_t* address) {
     int len = getAddressSize()+2;
-    if(autoack){
-        //Set both TX_ADDR and RX_ADDR_P0 for auto-ack with Enhanced ShockBurst:
-        //From manual:
-        //Set RX_ADDR_P0 equal to this address to handle
-        //automatic acknowledge if this is a PTX device with
-        //Enhanced ShockBurst enabled
-        spiBurstWriteRegister(NRF24_REG_0A_RX_ADDR_P0, address, len);
-    }
     spiBurstWriteRegister(NRF24_REG_10_TX_ADDR, address, len);
     uint8_t actadd[len];
     if(!getTransmitAddress(actadd))
@@ -287,6 +282,8 @@ boolean NRF24::getTransmitAddress(uint8_t * address){
 }
 
 boolean NRF24::setPipeAddress(uint8_t pipe, uint8_t* address) {
+    if(pipe == 0)
+        pipe0Address = 0;
     int len = getAddressSize()+2;
     //TODO: only send first byte for byte 1,2,3,4,5, or maybe it works anyway?
     spiBurstWriteRegister(NRF24_REG_0A_RX_ADDR_P0 + pipe, address, len);
@@ -315,95 +312,35 @@ boolean NRF24::getPipeAddress(uint8_t pipe, uint8_t * address){
 
 boolean NRF24::enablePipe(uint8_t pipe){
     uint8_t reg = spiReadRegister(NRF24_REG_02_EN_RXADDR);
-    if(pipe == 0)
-        reg = reg | NRF24_ERX_P0;
-    else if(pipe == 1)
-        reg = reg | NRF24_ERX_P1;
-    else if(pipe == 2)
-        reg = reg | NRF24_ERX_P2;
-    else if(pipe == 3)
-        reg = reg | NRF24_ERX_P3;
-    else if(pipe == 4)
-        reg = reg | NRF24_ERX_P4;
-    else if(pipe == 5)
-        reg = reg | NRF24_ERX_P5;
-    else return false;
+    reg = reg | (NRF24_ERX_P0 + pipe);
     spiWriteRegister(NRF24_REG_02_EN_RXADDR, reg);
-    return isAutoAckEnabled(pipe);
+    return isPipeEnabled(pipe);
 }
 
 
 boolean NRF24::isPipeEnabled(uint8_t pipe){
     uint8_t reg = spiReadRegister(NRF24_REG_02_EN_RXADDR);
-    if(pipe == 0)
-        return !((reg & NRF24_ERX_P0) ==0);
-    else if(pipe == 1)
-        return !((reg & NRF24_ERX_P1) ==0);
-    else if(pipe == 2)
-        return !((reg & NRF24_ERX_P2) ==0);
-    else if(pipe == 3)
-        return !((reg & NRF24_ERX_P3) ==0);
-    else if(pipe == 4)
-        return !((reg & NRF24_ERX_P4) ==0);
-    else if(pipe == 5)
-        return !((reg & NRF24_ERX_P5) ==0);
-    else return false;
+    return !((reg & (NRF24_ERX_P0 + pipe)) ==0);
 }
 
 
-boolean NRF24::enableAutoAck(uint8_t pipe){
+boolean NRF24::setAutoAck(uint8_t pipe, boolean autoack){
     uint8_t reg = spiReadRegister(NRF24_REG_01_EN_AA);
-    if(pipe == 0)
-        reg = reg | NRF24_ENAA_P0;
-    else if(pipe == 1)
-        reg = reg | NRF24_ENAA_P1;
-    else if(pipe == 2)
-        reg = reg | NRF24_ENAA_P2;
-    else if(pipe == 3)
-        reg = reg | NRF24_ENAA_P3;
-    else if(pipe == 4)
-        reg = reg | NRF24_ENAA_P4;
-    else if(pipe == 5)
-        reg = reg | NRF24_ENAA_P5;
-    else return false;
-    spiWriteRegister(NRF24_REG_01_EN_AA, reg);
-    return isAutoAckEnabled(pipe);
-}
-
-boolean NRF24::disableAutoAck(uint8_t pipe){
-    uint8_t reg = spiReadRegister(NRF24_REG_01_EN_AA);
-    if(pipe == 0)
-        reg = reg & ~NRF24_ENAA_P0;
-    else if(pipe == 1)
-        reg = reg & ~NRF24_ENAA_P1;
-    else if(pipe == 2)
-        reg = reg & ~NRF24_ENAA_P2;
-    else if(pipe == 3)
-        reg = reg & ~NRF24_ENAA_P3;
-    else if(pipe == 4)
-        reg = reg & ~NRF24_ENAA_P4;
-    else if(pipe == 5)
-        reg = reg & ~NRF24_ENAA_P5;
-    else return false;
-    spiWriteRegister(NRF24_REG_01_EN_AA, reg);
-    return isAutoAckEnabled(pipe);
+    if(autoack){
+        reg = reg | NRF24_ENAA_P0 + pipe;
+        spiWriteRegister(NRF24_REG_01_EN_AA, reg);
+        return isAutoAckEnabled(pipe);
+    }
+    else{
+        reg = reg & ~(NRF24_ENAA_P0 + pipe);
+        spiWriteRegister(NRF24_REG_01_EN_AA, reg);
+        return !isAutoAckEnabled(pipe);
+    }
 }
 
 boolean NRF24::isAutoAckEnabled(uint8_t pipe){
     uint8_t reg = spiReadRegister(NRF24_REG_01_EN_AA);
-    if(pipe == 0)
-        return !((reg & NRF24_ENAA_P0) ==0);
-    else if(pipe == 1)
-        return !((reg & NRF24_ENAA_P1) ==0);
-    else if(pipe == 2)
-        return !((reg & NRF24_ENAA_P2) ==0);
-    else if(pipe == 3)
-        return !((reg & NRF24_ENAA_P3) ==0);
-    else if(pipe == 4)
-        return !((reg & NRF24_ENAA_P4) ==0);
-    else if(pipe == 5)
-        return !((reg & NRF24_ENAA_P5) ==0);
-    else return false;
+    return !((reg & (NRF24_ENAA_P0 + pipe)) ==0);
 }
 
 boolean NRF24::setPayloadSize(uint8_t pipe, uint8_t size) {
@@ -487,44 +424,80 @@ boolean NRF24::powerDown() {
 
 boolean NRF24::powerUpRx() {
     uint8_t reg = spiReadRegister(NRF24_REG_00_CONFIG);
+    if((reg & NRF24_PWR_UP != 0) && (reg & NRF24_PRIM_RX != 0))
+        return true;//already in RX
+
     reg = reg | NRF24_PWR_UP | NRF24_PRIM_RX;
     spiWriteRegister(NRF24_REG_00_CONFIG, reg);
+
+    //restore pipe 0 if any
+    if(pipe0Address != NULL)
+        if(!setPipeAddress(0, pipe0Address))
+            return false;
+    //If coming from Tx or power down clean queues
+    flushTx();
+    flushRx();
+
     digitalWrite(_chipEnablePin, HIGH);
-    return true;
+
+    //wait the radio to come up
+    delayMicroseconds(130);
+    return isPoweredUp();
 }
 
 boolean NRF24::powerUpTx() {
     uint8_t reg = spiReadRegister(NRF24_REG_00_CONFIG);
-    reg = reg | NRF24_PWR_UP & ~NRF24_PRIM_RX;
-    // Its the pulse high that actually starts the transmission
-    digitalWrite(_chipEnablePin, LOW);
+    if((reg & NRF24_PWR_UP != 0) && (reg & NRF24_PRIM_RX == 0))
+        return true;//already in TX
+
+    reg = (reg | NRF24_PWR_UP) & ~NRF24_PRIM_RX;
     spiWriteRegister(NRF24_REG_00_CONFIG, reg);
+
+    //If coming from Rx or power down clean queues
+    flushTx();
+    flushRx();
+
     digitalWrite(_chipEnablePin, HIGH);
-    return true;
+    //wait the radio to come up
+    delayMicroseconds(130);
+    return isPoweredUp();
 }
 
 void NRF24::asyncSend(uint8_t* data, uint8_t len, boolean noack){
-    powerUpTx();
-    spiBurstWrite(noack ? NRF24_COMMAND_W_TX_PAYLOAD_NOACK : NRF24_COMMAND_W_TX_PAYLOAD, data, len);
-    // Radio will return to Standby II mode after transmission is complete
+    powerUpTx(); //set to transmit mode
+    if(! noack){ //if ack is set
+        //Set both TX_ADDR and RX_ADDR_P0 for auto-ack with Enhanced ShockBurst:
+        //From manual:
+        //Set RX_ADDR_P0 equal to this address to handle
+        //automatic acknowledge if this is a PTX device with
+        //Enhanced ShockBurst enabled
+        int len = getAddressSize();
+        byte addr[len];
+        if(!getTransmitAddress(addr))
+        spiBurstWriteRegister(NRF24_REG_0A_RX_ADDR_P0, addr, len);
+    }
+    spiBurstWrite(noack ? NRF24_COMMAND_W_TX_PAYLOAD_NOACK : NRF24_COMMAND_W_TX_PAYLOAD, data, len);//send data
+    //signal send
+    //digitalWrite(_chipEnablePin, LOW);
+    //delayMicroseconds(10);
+    digitalWrite(_chipEnablePin, HIGH);
 }
 
 
 boolean NRF24::send(uint8_t* data, uint8_t len, boolean noack) {
-    powerUpTx();
-    spiBurstWrite(noack ? NRF24_COMMAND_W_TX_PAYLOAD_NOACK : NRF24_COMMAND_W_TX_PAYLOAD, data, len);
-    // Radio will return to Standby II mode after transmission is complete
+    asyncSend(data, len, noack);
 
+    //Radio will return to Standby II mode after transmission is complete
     // Wait for either the Data Sent or Max ReTries flag, signalling the
     // end of transmission
     uint8_t status;
     while (!((status = statusRead()) & (NRF24_TX_DS | NRF24_MAX_RT)))
-	;
+       ;
 
     // Must clear NRF24_MAX_RT if it is set, else no further comm
-    spiWriteRegister(NRF24_REG_07_STATUS, NRF24_TX_DS | NRF24_MAX_RT);
+    spiWriteRegister(NRF24_REG_07_STATUS, status | ~NRF24_TX_DS | ~NRF24_MAX_RT);
     if (status & NRF24_MAX_RT)
-	flushTx();
+        flushTx();
     // Return true if data sent, false if MAX_RT
     return status & NRF24_TX_DS;
 }
@@ -545,16 +518,15 @@ boolean NRF24::available() {
 }
 
 void NRF24::waitAvailable() {
-    powerUpRx();
+    if(!powerUpRx())
+        return;
     while (!available())
 	;
 }
 
-// Blocks until a valid message is received or timeout expires
-// Return true if there is a message available
-// Works correctly even on millis() rollover
 boolean NRF24::waitAvailableTimeout(uint16_t timeout) {
-    powerUpRx();
+    if(!powerUpRx())
+        return false;
     unsigned long starttime = millis();
     while ((millis() - starttime) < timeout)
         if (available())
@@ -568,7 +540,7 @@ boolean NRF24::recv(uint8_t* pipe, uint8_t* buf, uint8_t* len) {
 
     // 0 microsecs @ 8MHz SPI clock
     if (!available())
-	return false;
+        return false;
     // 32 microsecs (if immediately available)
     *len = spiRead(NRF24_COMMAND_R_RX_PL_WID);
     uint8_t pipen = (spiReadRegister(NRF24_REG_07_STATUS) & NRF24_RX_P_NO) >> 1;

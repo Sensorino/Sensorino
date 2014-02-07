@@ -7,6 +7,7 @@
  * - addresses are 4 bytes long
  * - CRC is 2 bytes
  * - 2Mbps, 750us ack time, 3 retries
+ * The library also implements a set of "services" on top of basic communication means.
  *
  * Author: Dario Salvi (dariosalvi78 at gmail dot com)
  *
@@ -33,18 +34,31 @@
 //Default radio channel
 #define RF_CHANNEL 10
 
+//Definition of services and their packets
+/** Time service: a service for synchronizing clocks. */
+#define TIME_SERVICE 1
+/** Packet containing unix timestamp */
+typedef struct {
+    unsigned long timestamp;
+} timePacket;
+
+/** Internals service: a service that sends information of the Sensorino internals */
+#define INTERNALS_SERVICE 2
+/** Packet containing the measured voltage (*1000) and temperature (*1000) */
+typedef struct {
+    int vcc;
+    int temp;
+} internalsPacket;
+
+
 /** Sensorino, library that builds on top of the nRF24L01 chip.
- *
- *
- *
+ * Abastract low-level functionalities and implements services.
  */
 class Sensorino : public NRF24
 {
-    friend class Base;
-
     public:
 
-        /** The broadcast address. Default is 0 255 0 255
+        /** The broadcast address.
          */
         static byte broadCastAddress[4];
 
@@ -67,8 +81,9 @@ class Sensorino : public NRF24
         /** Initialises this instance and the radio module connected to it.
          * Initializes the SPI
          * - Set the radio to powerDown
+         * @return true on success
          */
-        static void init();
+        static boolean init();
 
         /** Sends a packet to the base.
          * @param service the service id
@@ -97,9 +112,41 @@ class Sensorino : public NRF24
          */
         static boolean receive(unsigned int timeout, byte* pipe, byte* sender, unsigned int* service, byte* data, int* len);
 
-    protected:
+        ///////////////////////////
+        //Services implementation//
+        ///////////////////////////
 
-    private:
+        //Broadcast services:
+
+        //Time service
+
+        /** Gets the local time.
+         * @return the time as unix timestamp
+         */
+        static unsigned long getTime();
+
+        /** Sets the local time.
+         * @param unixtime the time stamp in unix format
+         */
+        static void setTime(unsigned long unixtime);
+
+        /** Asks the time to other nodes, the time is set if received */
+        static void askTime();
+
+        /** Serves the time if available */
+        static void serveTime();
+
+        //Sensorino to base services:
+
+        //Internals service
+
+        /** Sends the internals to the base */
+        static void sendInternals();
+
+        /** Converts bytes back to internals */
+        internalsPacket parseInternals(byte* data);
+
+    protected:
 
         /** Composes the base packet with sender information.
          */
@@ -115,6 +162,30 @@ class Sensorino : public NRF24
          */
         static void decomposeBasePacket(byte* packet, int totlen, byte* sender, unsigned int* service, byte* data, int* len);
 
+        //////////////////////////////
+        //Private stuff for services//
+        //////////////////////////////
+
+        /** last unix time stamp received */
+        static unsigned long lastUnixTime;
+
+        /** the local timestamp (millis) when the unix time stamp was received */
+        static unsigned long lastTimeStamp;
+
+        /** Gets the internal voltage.
+        * Works with atmega 328 or 168 only.
+        * The voltage is returned in millivolts.
+        * From: https://code.google.com/p/tinkerit/wiki/SecretVoltmeter
+        */
+        static int readVcc();
+
+        /** Gets the internal temperature of the MCU.
+        * Temperature is returned in milli-°„C. So 25000 is 25°„C.
+        * From: https://code.google.com/p/tinkerit/wiki/SecretThermometer
+        */
+        static int readTemp();
+
+        private:
 };
 
 /** THE instance, Arduino style

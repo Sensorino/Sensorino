@@ -306,10 +306,9 @@ public:
      * Uses this address in TX address and RX pipe 0 if ShockBurst is enabled
      * @param address The new address for transmitting.
      * The length must match the actual size.
-     * @param autoack set to true if autoack is expected
      * @return true on success
      */
-    static boolean setTransmitAddress(uint8_t* address, boolean autoack);
+    static boolean setTransmitAddress(uint8_t* address);
 
     /** Gets the current transmit address.
      * @param addr a buffer where to store the address,
@@ -350,15 +349,10 @@ public:
 
     /** Enables auto acknoweldgment (Shockburst) on the pipe.
      * @param pipe pipe number
+     * @param autoack true if autoack must be enabled
      * @return true if success
      */
-    static boolean enableAutoAck(uint8_t pipe);
-
-    /** Disables auto acknoweldgment (Shockburst) on the pipe.
-     * @param pipe pipe number
-     * @return true if success
-     */
-    static boolean disableAutoAck(uint8_t pipe);
+    static boolean setAutoAck(uint8_t pipe, boolean autoack);
 
     /** Tells if the pipe is wokring with auto ack.
      * @param pipe pipe number
@@ -505,6 +499,7 @@ protected:
 private:
     static uint8_t _chipEnablePin;
     static uint8_t _chipSelectPin;
+    static uint8_t * pipe0Address;
 
     /** Handlers of received packet, one per pipe.
      */
