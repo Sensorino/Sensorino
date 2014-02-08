@@ -13,15 +13,13 @@
  *
  * Licensed under the GPL license http://www.gnu.org/copyleft/gpl.html
  */
-#include "Sensorino.h"
-#include "NRF24.h"
+#ifdef __cplusplus
+extern "C"
+#endif
 
-// Default addresses:
-byte Sensorino::broadCastAddress[4] = {BROADCAST_ADDR};
-byte Sensorino::baseAddress[4] = {BASE_ADDR};
-byte Sensorino::thisAddress[4] = {1,2,3,4};
+#include <Sensorino.h>
 
-void Sensorino::configure(byte chipEnablePin, byte chipSelectPin, byte irqPin, byte myAdd[]) {
+void configure(byte chipEnablePin, byte chipSelectPin, byte irqPin, byte myAdd[]) {
     NRF24::configure(chipEnablePin, chipSelectPin, irqPin);
     thisAddress[0] = myAdd[0];
     thisAddress[1] = myAdd[1];
@@ -29,65 +27,32 @@ void Sensorino::configure(byte chipEnablePin, byte chipSelectPin, byte irqPin, b
     thisAddress[3] = myAdd[3];
 }
 
-boolean Sensorino::init()
-{
+boolean start(){
     //Init the nrf24
-    NRF24::init();
-    if(!setChannel(RF_CHANNEL)) return false;
+    nRF24.init();
+    if(!nRF24.setChannel(RF_CHANNEL)) return false;
     //set dynamic payload size
-    if(!setPayloadSize(0, 0)) return false;
-    if(!setPayloadSize(1, 0)) return false;
+    if(!nRF24.setPayloadSize(0, 0)) return false;
+    if(!nRF24.setPayloadSize(1, 0)) return false;
     //Set address size to 4
-    if(!setAddressSize(NRF24::NRF24AddressSize4Bytes)) return false;
+    if(!nRF24.setAddressSize(NRF24::NRF24AddressSize4Bytes)) return false;
     //Set CRC to 2 bytes
-    if(!setCRC(NRF24::NRF24CRC2Bytes)) return false;
+    if(!nRF24.setCRC(NRF24::NRF24CRC2Bytes)) return false;
     //Set 2 Mbps, maximum power
-    if(!setRF(NRF24::NRF24DataRate2Mbps, NRF24::NRF24TransmitPower0dBm)) return false;
+    if(!nRF24.setRF(NRF24::NRF24DataRate2Mbps, NRF24::NRF24TransmitPower0dBm)) return false;
     //Configure pipes
-    if(!setPipeAddress(0, broadCastAddress)) return false;
-    if(!enablePipe(0)) return false;
-    if(!setAutoAck(0, false)) return false;
-    if(!setPipeAddress(1, thisAddress)) return false;
-    if(!enablePipe(1)) return false;
-    if(!setAutoAck(1, true)) return false;
+    if(!nRF24.setPipeAddress(0, broadCastAddress)) return false;
+    if(!nRF24.enablePipe(0)) return false;
+    if(!nRF24.setAutoAck(0, false)) return false;
+    if(!nRF24.setPipeAddress(1, thisAddress)) return false;
+    if(!nRF24.enablePipe(1)) return false;
+    if(!nRF24.setAutoAck(1, true)) return false;
     //Configure retries
-    if(!setTXRetries(3, 3)) return false;
+    if(!nRF24.setTXRetries(3, 3)) return false;
     return true;
 }
 
-
-boolean Sensorino::sendToBase(unsigned int service, byte* data, int len){
-    if(!setTransmitAddress(baseAddress))
-        return false;
-    byte pkt[6+len];
-    composeBasePacket(pkt, service, data, len);
-    return send(pkt, 6+len, false);
-}
-
-boolean Sensorino::sendToBroadcast(unsigned int service, byte* data, int len){
-    if(!setTransmitAddress(broadCastAddress))
-        return false;
-    byte pkt[6+len];
-    composeBasePacket(pkt, service, data, len);
-    return send(pkt, 6+len, true);
-}
-
-
-boolean Sensorino::receive(unsigned int timeout, byte* pipe, byte* sender,
-                           unsigned int* service, byte* data, int* len){
-    byte buffer[NRF24_MAX_MESSAGE_LEN];
-    byte totlen;
-    if(waitAvailableTimeout(timeout)){
-            if(recv(pipe, buffer, &totlen)){
-                decomposeBasePacket(buffer, totlen, sender, service, data, len);
-            return true;
-        }
-    }
-    return false;
-}
-
-
-void Sensorino::composeBasePacket(byte* buffer, unsigned int service, byte* data, int len){
+void composeBasePacket(byte* buffer, unsigned int service, byte* data, int len){
     int totlen = 6 + len;
     buffer[0] = thisAddress[0];
     buffer[1] = thisAddress[1];
@@ -100,7 +65,7 @@ void Sensorino::composeBasePacket(byte* buffer, unsigned int service, byte* data
     }
 }
 
-void Sensorino::decomposeBasePacket(byte* packet, int totlen, byte* sender,
+void decomposeBasePacket(byte* packet, int totlen, byte* sender,
                                     unsigned int* service, byte* data, int* len){
     sender[0] = packet[0];
     sender[1] = packet[1];
@@ -113,3 +78,33 @@ void Sensorino::decomposeBasePacket(byte* packet, int totlen, byte* sender,
     }
 }
 
+boolean sendToBase(unsigned int service, byte* data, int len){
+    if(!nRF24.setTransmitAddress(baseAddress))
+        return false;
+    byte pkt[6+len];
+    composeBasePacket(pkt, service, data, len);
+    return nRF24.send(pkt, 6+len, false);
+}
+
+boolean sendToBroadcast(unsigned int service, byte* data, int len){
+    if(!nRF24.setTransmitAddress(broadCastAddress))
+        return false;
+    byte pkt[6+len];
+    composeBasePacket(pkt, service, data, len);
+    return nRF24.send(pkt, 6+len, true);
+}
+
+boolean receive(unsigned int timeout, boolean* broadcast, byte* sender,
+                           unsigned int* service, byte* data, int* len){
+    byte buffer[NRF24_MAX_MESSAGE_LEN];
+    byte totlen;
+    byte pipe;
+    if(nRF24.waitAvailableTimeout(timeout)){
+            if(nRF24.recv(&pipe, buffer, &totlen)){
+                *broadcast = (pipe == 0);
+                decomposeBasePacket(buffer, totlen, sender, service, data, len);
+            return true;
+        }
+    }
+    return false;
+}

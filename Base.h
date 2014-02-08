@@ -1,110 +1,47 @@
-/** Sensorino library.
- * This library abstracts the nRF24L01.
- * Decisions taken:
- * - pipe 0 is used as broadcast pipe, with shared address and no acks
- * - pipe 1 is used as private address
- * - nodes send their address
- * - addresses are 4 bytes long
- * - CRC is 2 bytes
- * - 2Mbps, 750us ack time, 3 retries
- * The library also implements a set of "services" on top of basic communication means.
- *
- * Author: Dario Salvi (dariosalvi78 at gmail dot com)
- *
- * Licensed under the GPL license http://www.gnu.org/copyleft/gpl.html
- */
-#ifndef BASE_h
-#define BASE_h
-
-#include "NRF24.h"
-#include "Sensorino.h"
-
 /** Base, a base for sensorionos.
  * Adds communication to a server on the serial line.
  * Serial line messages are either debugging messages, either JSON messages.
  * JSON messages always start with { and end with }
  * In principle JSON messages are sent on one line.
+ *
+ * Author: Dario Salvi (dariosalvi78 at gmail dot com)
+ *
+ * Licensed under the GPL license http://www.gnu.org/copyleft/gpl.html
  */
-class Base : public Sensorino
-{
-    public:
+#ifndef BASE_H
+#define BASE_H
 
-        /** Configures Sensorino.
-         * init() must be called to initialise the interface and the radio module
-         * @param chipEnablePin the Arduino pin to use to enable the chip for transmit/receive
-         * @param chipSelectPin the Arduino pin number of the output to use to select the NRF24 before
-         */
-        static void configure(byte chipEnablePin, byte chipSelectPin, byte irqpin);
+#include <nRF24.h>
+#include <Sensorino.h>
 
-        /** Initialises this instance and the radio module connected to it.
-         * Initializes the SPI
-         * - Set the radio to powerDown
-         * @return true on success
-         */
-        static boolean init();
-
-        /** Sends a packet to a sensorino.
-         * @param address the address of the receiver
-         * @param service the service id
-         * @param data data associated
-         * @param len the length of the data
-         * @return true on success
-         */
-        static boolean sendToSensorino(byte address[],word service, byte* data, int len);
-
-
-
-        ///////////////////////////////
-        // Server side communication //
-        ///////////////////////////////
-
-        /** Reads a line from the serial.
-         * @param buffer needs a buffer where to store characters
-         * @return a String object
-         */
-        static String readLineFromSerial(char* buffer);
-
-        /** Interprets lines sent by the server over Serial port.
-         * @param line the received line
-         */
-        static void parseServerLine(String line);
-
-        //Broadcast services:
-
-        //Time service
-
-        /** Time protocol with server through serial.
-         * Arduino sends #getTime
-         * Server answers: #time 1391429779 (seconds since Jan 01 1970)
-         * Arduino sets internal time
-         */
-        static void askServerTime();
-
-        /** Time protocol with server through serial.
-         * Arduino sends #getTime
-         * Server answers: #time 1391429779 (seconds since Jan 01 1970)
-         * Arduino sets internal time
-         */
-        static void parseServerTime(String line);
-
-        //Sensorino to base services:
-
-        //Internals service
-
-        /** Sends the information of internals to the server.
-         * @param address the address of the sensorino
-         * @param pkt the information
-         */
-         static void serverSendInternals(byte * address, internalsPacket pkt);
-
-    protected:
-
-    private:
-
-};
-
-/** THE instance, Arduino style
+/** Configures Base.
+ * @param chipEnablePin the Arduino pin to use to enable the chip for transmit/receive
+ * @param chipSelectPin the Arduino pin number of the output to use to select the NRF24 before
  */
-extern Base base;
+void configureBase(byte chipEnablePin, byte chipSelectPin, byte irqpin);
 
-#endif // BASE_h
+/** Initialises this instance and the radio module connected to it.
+ * Initializes the SPI
+ * - Set the radio to powerDown
+ * @return true on success
+ */
+boolean startBase();
+
+/** Sends a packet to a sensorino.
+ * @param address the address of the receiver
+ * @param service the service id
+ * @param data data associated
+ * @param len the length of the data
+ * @return true on success
+ */
+boolean sendToSensorino(byte address[],word service, byte* data, int len);
+
+/** Reads a line from the serial.
+ * It blocks until a line is read or timeout is reached.
+ * Timeout must be set in Serial.setTimeout();
+ * @param buffer needs a buffer where to store characters
+ * @return a String object
+ */
+String readLineFromSerial(char* buffer);
+
+#endif // BASE_H
