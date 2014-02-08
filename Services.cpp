@@ -40,7 +40,7 @@ void Sensorino::askTime(){
     byte pipe;
     if(sensorino.receive(2000, &pipe, sender,
                       &receivedService, receivedMessage, &receivedLen)) {
-        if((pipe == BROADCAST_PIPE) && (receivedService == TIME_SERVICE) && (receivedLen>=sizeof(internalsPacket))){
+        if((pipe == BROADCAST_PIPE) && (receivedService == TIME_SERVICE) && (receivedLen>=sizeof(timePacket))){
             timePacket pkt = *((timePacket *) receivedMessage);
             setTime( pkt.timestamp );
         }

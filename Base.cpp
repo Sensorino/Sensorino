@@ -15,8 +15,8 @@
  */
  #include "Base.h"
 
-void Base::configure(byte chipEnablePin, byte chipSelectPin) {
-    NRF24::configure(chipEnablePin, chipSelectPin);
+void Base::configure(byte chipEnablePin, byte chipSelectPin, byte irqPin) {
+    NRF24::configure(chipEnablePin, chipSelectPin, irqPin);
 }
 
 boolean Base::init()

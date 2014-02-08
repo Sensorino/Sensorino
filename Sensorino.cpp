@@ -21,8 +21,8 @@ byte Sensorino::broadCastAddress[4] = {BROADCAST_ADDR};
 byte Sensorino::baseAddress[4] = {BASE_ADDR};
 byte Sensorino::thisAddress[4] = {1,2,3,4};
 
-void Sensorino::configure(byte chipEnablePin, byte chipSelectPin, byte myAdd[]) {
-    NRF24::configure(chipEnablePin, chipSelectPin);
+void Sensorino::configure(byte chipEnablePin, byte chipSelectPin, byte irqPin, byte myAdd[]) {
+    NRF24::configure(chipEnablePin, chipSelectPin, irqPin);
     thisAddress[0] = myAdd[0];
     thisAddress[1] = myAdd[1];
     thisAddress[2] = myAdd[2];
