@@ -7,14 +7,21 @@
 #ifdef __cplusplus
 extern "C"
 #endif
+#include "Sensorino.h" //needed to have reference to the periodicWakeUps
 #include "TimeService.h"
 
 unsigned long lastUnixTime = 0;
 unsigned long lastTimeStamp = 0;
 
 unsigned long getTime(){
-    if(lastUnixTime != 0)
-        return lastUnixTime + ( (millis() - lastTimeStamp)/1000 );
+    if(lastUnixTime != 0){
+        unsigned long time = lastUnixTime + ( (millis() - lastTimeStamp)/1000 );
+        if(periodicWakeUps != -1){
+            time += periodicWakeUps * 8;
+            periodicWakeUps = 0;
+        }
+        return time;
+    }
     else return 0;
 }
 

@@ -40,6 +40,10 @@ static byte broadCastAddress[4] = {BROADCAST_ADDR};
 static byte baseAddress[4] = {BASE_ADDR};
 static byte thisAddress[4] = {1,2,3,4};
 
+static int wakeUpPin = -1; //-1 means not activated
+static volatile int periodicWakeUps = -1; //-1 means not activated
+
+
 /** Configures Sensorino.
  * init() must be called to initialise the interface and the radio module
  * @param chipEnablePin the Arduino pin to use to enable the chip for transmit/receive
@@ -54,6 +58,23 @@ void configure(byte chipEnablePin, byte chipSelectPin, byte irqpin, byte myAddre
  * @return true on success
  */
 boolean start();
+
+/** Put the Sensorino into sleep mode.
+ * Powers down everything, radio and MCU.
+ * First call wakeUpOnPinChange or wakeUpPeriodically or it
+ * won't wakeup until a reset !
+ */
+void sleep();
+
+/** Wakes up the Sensorino if the level of a pin changes.
+ * @param pin the pin, can be 2 or 3
+ */
+void wakeUpOnPinChange(byte pin);
+
+/** Wakes the Sensorino up every 8 seconds.
+ * You can use periodicWakeUps to check how many times it has been waken up
+ */
+void wakeUpPeriodically();
 
 /** Composes the base packet with sender information.
  * @param buffer a buffer where to store the final packet
