@@ -32,7 +32,12 @@ void configure(byte chipEnablePin, byte chipSelectPin, byte irqPin, byte myAdd[]
 }
 
 boolean start(){
-    //Set sleep mode:
+    //Set sleep mode power down:
+    //In this mode, the external Oscillator is stopped, while the external interrupts, the 2-
+    //wire Serial Interface address watch, and the Watchdog continue operating (if enabled). Only an
+    //External Reset, a Watchdog System Reset, a Watchdog Interrupt, a Brown-out Reset, a 2-wire
+    //Serial Interface address match, an external level interrupt on INT0 or INT1, or a pin change
+    //interrupt can wake up the MCU.
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
     sleep_enable();
 
@@ -60,6 +65,7 @@ boolean start(){
     return true;
 }
 
+//ISR of the pin used for wakeup
 void wakeUpOnPinISR(){
     //detach the interrupt until we need it again
     if(wakeUpPin != -1){
@@ -68,23 +74,15 @@ void wakeUpOnPinISR(){
     }
 }
 
-//see http://donalmorrissey.blogspot.com.es/2010/04/putting-arduino-diecimila-to-sleep.html
 void wakeUpOnPinChange(byte pin){
     wakeUpPin = pin;
     pinMode(pin, INPUT);
+    //Activate interrupts, in case they aren't
+    interrupts();
 }
 
-//From: http://donalmorrissey.blogspot.com.es/2010/04/sleeping-arduino-part-5-wake-up-via.html
 void wakeUpPeriodically(){
     periodicWakeUps = 0;
-    // reset status flag
-    MCUSR &= ~(1 << WDRF);
-    // enable configuration changes
-    WDTCSR |= (1 << WDCE) | (1 << WDE);
-    // set the prescalar to 9 = 1001
-    WDTCSR = (1<< WDP0) | (1 << WDP3);
-    // enable interrupt mode without reset
-    WDTCSR |= _BV(WDIE);
 }
 
 //ISR of the watchdog
@@ -93,34 +91,29 @@ ISR( WDT_vect ) {
     if(periodicWakeUps <0)
         periodicWakeUps = 0;
     wdt_disable();
-    wdt_reset();
 }
+
 
 void sleep(){
     //power down radio:
     nRF24.powerDown();
-    //turns off all pins
-    for(int x = 1 ; x < 18 ; x++){
-        pinMode(x, INPUT);
-        digitalWrite(x, LOW);
-    }
-    //power down everything!
-    power_adc_disable();
-    power_twi_disable();
-    power_spi_disable();
-    power_usart0_disable();
-    power_timer0_disable();
-    power_timer1_disable();
-    power_timer2_disable();
+
     //Register the pin change interrupt
     if(wakeUpPin != -1){
         if(wakeUpPin == 2) attachInterrupt(0, wakeUpOnPinISR, CHANGE);
         else attachInterrupt(1, wakeUpOnPinISR, CHANGE);
+        delay(100);
     }
     //And/or activate the watchdog
     if(periodicWakeUps != -1){
-        wdt_enable(WDTO_8S);
-        wdt_reset();
+        // reset status flag
+        MCUSR &= ~(1 << WDRF);
+        // enable configuration changes
+        WDTCSR |= (1 << WDCE) | (1 << WDE);
+        // set the prescalar to 9 = 1001
+        WDTCSR = (1<< WDP0) | (1 << WDP3);
+        // enable interrupt mode without reset
+        WDTCSR |= _BV(WDIE);
     }
 
     //Let's sleep !
@@ -130,14 +123,7 @@ void sleep(){
     sleep_disable();
     //watchdog and pin interrupt should be disactivated already
 
-    //power up everything!
-    power_adc_enable();
-    power_twi_enable();
-    power_spi_enable();
-    power_usart0_enable();
-    power_timer0_enable();
-    power_timer1_enable();
-    power_timer2_enable();
+    power_all_enable();
 }
 
 void composeBasePacket(byte* buffer, unsigned int service, byte* data, int len){
