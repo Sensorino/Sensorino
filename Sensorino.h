@@ -40,8 +40,14 @@ static byte broadCastAddress[4] = {BROADCAST_ADDR};
 static byte baseAddress[4] = {BASE_ADDR};
 static byte thisAddress[4] = {1,2,3,4};
 
+/** Pin used to wake up the sensorino on a change of level
+ */
 static int wakeUpPin = -1; //-1 means not activated
-static volatile int periodicWakeUps = -1; //-1 means not activated
+
+/** Counter of the wake ups produced by the watchdog.
+ * Beign signed it lasts 72 hours max, after which it is resetted.
+ */
+static volatile int periodicWakeUpCounter = -1; //-1 means not activated
 
 
 /** Configures Sensorino.
@@ -72,9 +78,11 @@ void sleep();
 void wakeUpOnPinChange(byte pin);
 
 /** Wakes the Sensorino up every 8 seconds.
- * You can use periodicWakeUps to check how many times it has been waken up
+ * You can use periodicWakeUps to check how many times it has been waken up.
+ * @param _8secsmult multiple of 8 seconds after which the sensorino should really wakeup
+ * being an unsigned 8 bits int, the maximum is around 30 minutes
  */
-void wakeUpPeriodically();
+void wakeUpPeriodically(byte _8secsmult);
 
 /** Composes the base packet with sender information.
  * @param buffer a buffer where to store the final packet

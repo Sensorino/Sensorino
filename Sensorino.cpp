@@ -32,15 +32,6 @@ void configure(byte chipEnablePin, byte chipSelectPin, byte irqPin, byte myAdd[]
 }
 
 boolean start(){
-    //Set sleep mode power down:
-    //In this mode, the external Oscillator is stopped, while the external interrupts, the 2-
-    //wire Serial Interface address watch, and the Watchdog continue operating (if enabled). Only an
-    //External Reset, a Watchdog System Reset, a Watchdog Interrupt, a Brown-out Reset, a 2-wire
-    //Serial Interface address match, an external level interrupt on INT0 or INT1, or a pin change
-    //interrupt can wake up the MCU.
-    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-    sleep_enable();
-
     //Init the nrf24
     nRF24.init();
     if(!nRF24.setChannel(RF_CHANNEL)) return false;
@@ -65,47 +56,86 @@ boolean start(){
     return true;
 }
 
-//ISR of the pin used for wakeup
-void wakeUpOnPinISR(){
-    //detach the interrupt until we need it again
-    if(wakeUpPin != -1){
-        if(wakeUpPin == 2) detachInterrupt(0);
-        else detachInterrupt(1);
-    }
+//Used to keep track if we have to keep sleeping or not
+volatile boolean keepSleeping = true;
+
+//ISR that wakes up the PIC when a pin changes from LOW to HIGH or viceversa
+ISR(PCINT0_vect){
+    keepSleeping = false;
+}
+ISR(PCINT1_vect, ISR_ALIASOF(PCINT0_vect));
+ISR(PCINT2_vect, ISR_ALIASOF(PCINT0_vect));
+
+//Returns the interrupt mask of the pin
+byte pinToInt(byte pin){
+  if(pin <=7)
+    return PCINT16 + pin;
+  else if(pin >=8 && pin <=13)
+    return PCINT0 + (pin-8);
+  else return PCINT8 + (pin -14);
+}
+
+//Returns the interrupt enable mask of the pin
+byte pinToIE(byte pin){
+  if(pin <=7)
+    return PCIE2;
+  else if(pin >=8 && pin <=13)
+    return PCIE0;
+  else return PCIE1;
 }
 
 void wakeUpOnPinChange(byte pin){
     wakeUpPin = pin;
-    pinMode(pin, INPUT);
-    //Activate interrupts, in case they aren't
-    interrupts();
+    //Set on change interrupt mask
+    if(wakeUpPin <=7)
+        PCMSK2 |= (1 << pinToInt(wakeUpPin));
+    else if(wakeUpPin >=8 && wakeUpPin <=13)
+        PCMSK0 |= (1 << pinToInt(wakeUpPin));
+     else PCMSK1 |= (1 << pinToInt(wakeUpPin));
 }
 
-void wakeUpPeriodically(){
-    periodicWakeUps = 0;
+//Used to keep track of how long we should sleep
+int wakeupAfter = 1;
+
+void wakeUpPeriodically(byte _8secsmult){
+    periodicWakeUpCounter = 0;
+    wakeupAfter = _8secsmult;
 }
 
 //ISR of the watchdog
 ISR( WDT_vect ) {
-    periodicWakeUps++;
-    if(periodicWakeUps <0)
-        periodicWakeUps = 0;
-    wdt_disable();
+    periodicWakeUpCounter++;
+    if(periodicWakeUpCounter <0)
+        periodicWakeUpCounter = 0;
+    if(periodicWakeUpCounter % wakeupAfter != 0){
+        keepSleeping = true;
+    } else {
+        keepSleeping = false;
+    }
 }
 
 
 void sleep(){
     //power down radio:
     nRF24.powerDown();
+    //make sure we don't get interrupted before we sleep
+    noInterrupts ();
 
-    //Register the pin change interrupt
+    //Set sleep mode power down:
+    //In this mode, the external Oscillator is stopped, while the external interrupts, the 2-
+    //wire Serial Interface address watch, and the Watchdog continue operating (if enabled). Only an
+    //External Reset, a Watchdog System Reset, a Watchdog Interrupt, a Brown-out Reset, a 2-wire
+    //Serial Interface address match, an external level interrupt on INT0 or INT1, or a pin change
+    //interrupt can wake up the MCU.
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+    sleep_enable();
+
+    //Register the pin change interrupt, if any
     if(wakeUpPin != -1){
-        if(wakeUpPin == 2) attachInterrupt(0, wakeUpOnPinISR, CHANGE);
-        else attachInterrupt(1, wakeUpOnPinISR, CHANGE);
-        delay(100);
+        PCICR |= (1 << pinToIE(wakeUpPin));
     }
-    //And/or activate the watchdog
-    if(periodicWakeUps != -1){
+    //Activate the watchdog, if needed
+    if(periodicWakeUpCounter != -1){
         // reset status flag
         MCUSR &= ~(1 << WDRF);
         // enable configuration changes
@@ -115,14 +145,21 @@ void sleep(){
         // enable interrupt mode without reset
         WDTCSR |= _BV(WDIE);
     }
-
+    //interrupts allowed now
+    interrupts ();
     //Let's sleep !
-    sleep_mode();
+    keepSleeping = true;
+    while(keepSleeping){
+        sleep_mode();
+    }
 
     //Here we wake up
     sleep_disable();
-    //watchdog and pin interrupt should be disactivated already
-
+    //deactivate watchdog and interrupts in case they weren't
+    wdt_disable();
+    if(wakeUpPin != -1){
+        PCICR &= ~(1 << pinToIE(wakeUpPin));
+    }
     power_all_enable();
 }
 
