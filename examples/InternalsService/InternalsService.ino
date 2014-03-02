@@ -25,6 +25,7 @@ void setup() {
   byte myAddr[4] = {1,100,2,200}; //Sensorino address
   configure(9, 10, 2, myAddr);
   if(!start()) Serial.println("Cannot init!");
+  wakeUpPeriodically(1); //every 8 seconds
 #endif
 }
 
@@ -45,7 +46,11 @@ void loop() {
   }
 #else
   Serial.println("Sending internals");
-  sendInternals(123456);
-  delay(5000);
+  internalsPacket pkt;
+  pkt.timestamp = 123456;
+  pkt.vcc = readVcc();
+  pkt.temperature = readTemp();
+  if(!sendInternals(pkt)) Serial.println("Cannot send internals");
+  sleep();
 #endif
 }
