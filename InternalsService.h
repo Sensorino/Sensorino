@@ -16,33 +16,33 @@
 #include <Sensorino.h>
 #include <Base.h>
 
-#define INTERNALS_SERVICE 1
+#define INTERNALS_SERVICE 2
 
 /** Packet containing the measured voltage (*1000) and temperature (*1000)
  */
 typedef struct {
     unsigned long timestamp; /**< unix timestamp */
     int vcc; /**< voltage in millivolts */
-    int temp; /**< temperature in milli C */
+    int temperature; /**< temperature as read by the ADC */
 } internalsPacket;
 
 /** Gets the internal voltage.
- * Works with atmega 328 or 168 only.
  * The voltage is returned in millivolts.
  * From: https://code.google.com/p/tinkerit/wiki/SecretVoltmeter
  */
 int readVcc();
 
 /** Gets the internal temperature of the MCU.
- * Temperature is returned in milli-¡ãC. So 25000 is 25¡ãC.
- * From: https://code.google.com/p/tinkerit/wiki/SecretThermometer
+ * The value is returned as the raw value from the ADC.
+ * From: http://playground.arduino.cc/Main/InternalTemperatureSensor
  */
 int readTemp();
 
 /** Sends the internals to the base
- * The timestamp of the measurement, 0 unknown.
+ * @param the internals information
+ * @return true on success
  */
-void sendInternals(unsigned long timestamp);
+boolean sendInternals(internalsPacket pkt);
 
 /** Converts bytes back to internals
  */

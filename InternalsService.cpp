@@ -14,12 +14,8 @@ extern "C"
 #endif
 #include "InternalsService.h"
 
-void sendInternals(unsigned long timestamp){
-    internalsPacket pkt;
-    pkt.timestamp = timestamp;
-    pkt.vcc = readVcc();
-    pkt.temp = readTemp();
-    sendToBase(INTERNALS_SERVICE, (byte*)&pkt, sizeof(internalsPacket));
+boolean sendInternals(internalsPacket pkt){
+    return sendToBase(INTERNALS_SERVICE, (byte*)&pkt, sizeof(internalsPacket));
 }
 
 internalsPacket parseInternals(byte* data){
@@ -36,7 +32,7 @@ void serverSendInternals(byte* address, internalsPacket ints){
     Serial.print("], \"timestamp\": ");
     Serial.print(ints.timestamp);
     Serial.print(", \"temp\": ");
-    Serial.print(((float)ints.temp)/1000);
+    Serial.print(ints.temperature);
     Serial.print(", \"volts\": ");
     Serial.print(((float)ints.vcc)/1000);
     Serial.println(" } }");
@@ -46,8 +42,8 @@ int readVcc() {
   long result;
   // Read 1.1V reference against AVcc
   ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
-  delay(2); // Wait for Vref to settle
-  ADCSRA |= _BV(ADSC); // Convert
+  delay(2);
+  ADCSRA |= _BV(ADSC);
   while (bit_is_set(ADCSRA,ADSC));
   result = ADCL;
   result |= ADCH<<8;
@@ -55,16 +51,12 @@ int readVcc() {
   return (int) result;
 }
 
-
+//From: http://playground.arduino.cc/Main/InternalTemperatureSensor
 int readTemp() {
-  long result;
-  // Read temperature sensor against 1.1V reference
-  ADMUX = _BV(REFS1) | _BV(REFS0) | _BV(MUX3);
-  delay(2); // Wait for Vref to settle
-  ADCSRA |= _BV(ADSC); // Convert
+  ADMUX = (_BV(REFS1) | _BV(REFS0) | _BV(MUX3));
+  ADCSRA |= _BV(ADEN);
+  delay(20);
+  ADCSRA |= _BV(ADSC);
   while (bit_is_set(ADCSRA,ADSC));
-  result = ADCL;
-  result |= ADCH<<8;
-  result = (result - 125) * 1075;
-  return (int) result;
+  return ADCW;
 }
