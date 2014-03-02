@@ -1,4 +1,4 @@
-/** Base, a base for sensorionos.
+/** Base, a base for sensorinos.
  * Adds communication to a server on the serial line.
  * Serial line messages are either debugging messages, either JSON messages.
  * JSON messages always start with { and end with }
@@ -13,6 +13,7 @@ extern "C"
 #endif
 
 #include <Base.h>
+
 
 void configureBase(byte chipEnablePin, byte chipSelectPin, byte irqPin) {
     nRF24.configure(chipEnablePin, chipSelectPin, irqPin);

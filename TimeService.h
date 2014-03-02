@@ -24,6 +24,7 @@ typedef struct {
 } timePacket;
 
 /** Gets the local time.
+ * If the time is not set, 0 will be returned.
  * @return the time as unix timestamp
  */
 unsigned long getTime();
@@ -34,26 +35,23 @@ unsigned long getTime();
 void setTime(unsigned long unixtime);
 
 /** Asks the time to other nodes, the time is set if received
+ * @return true on success
  */
-void askTime();
+boolean askTime();
 
 /** Serves the time if available
+ * @param address the address of the sensorino to be served
+ * @return true on success
  */
-void serveTime();
+boolean serveTime(byte* address);
 
 /** Time protocol with server through serial.
  * Used by the Base node.
  * Arduino sends { "command" : "getTime" }
  * Server answers: { "time" : 1391796357 } (seconds since Jan 01 1970)
- * Arduino sets internal time
+ * Arduino sets internal time.
+ * @return true on success
  */
-void askServerTime();
-
-/** Time protocol with server through serial.
- * Arduino sends { "command" : "getTime" }
- * Server answers: { "time" : 1391796357 } (seconds since Jan 01 1970)
- * Arduino sets internal time
- */
-void parseServerTime(String line);
+boolean askServerTime();
 
 #endif // TIMESERVICE_H

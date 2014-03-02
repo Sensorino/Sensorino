@@ -35,19 +35,14 @@
 #define RF_CHANNEL 10
 
 
-// Default addresses:
-static byte broadCastAddress[4] = {BROADCAST_ADDR};
-static byte baseAddress[4] = {BASE_ADDR};
-static byte thisAddress[4] = {1,2,3,4};
-
-/** Pin used to wake up the sensorino on a change of level
- */
-static int wakeUpPin = -1; //-1 means not activated
+extern byte broadCastAddress[4];
+extern byte baseAddress[4];
+extern byte thisAddress[4];
 
 /** Counter of the wake ups produced by the watchdog.
  * Beign signed it lasts 72 hours max, after which it is resetted.
  */
-static volatile int periodicWakeUpCounter = -1; //-1 means not activated
+extern volatile int periodicWakeUpCounter;
 
 
 /** Configures Sensorino.

@@ -12,17 +12,18 @@ extern "C"
 
 unsigned long lastUnixTime = 0;
 unsigned long lastTimeStamp = 0;
+unsigned long lastPeriodicCounter = 0;
 
 unsigned long getTime(){
     if(lastUnixTime != 0){
         unsigned long time = lastUnixTime + ( (millis() - lastTimeStamp)/1000 );
         if(periodicWakeUpCounter != -1){
-            time += periodicWakeUpCounter * 8;
-            periodicWakeUpCounter = 0;
+            time += (periodicWakeUpCounter - lastPeriodicCounter) * 8;
+            lastPeriodicCounter = periodicWakeUpCounter;
         }
-        return time;
+        setTime(time);
     }
-    else return 0;
+    return lastUnixTime;
 }
 
 void setTime(unsigned long ts){
@@ -30,49 +31,51 @@ void setTime(unsigned long ts){
     lastUnixTime = ts;
 }
 
-void askTime(){
+boolean askTime(){
     byte message[4] = {0,0,0,0}; //zeros message = "ask for time"
-    if(!sendToBroadcast(TIME_SERVICE, message, 4))
-        return;
+    if(!sendToBase(TIME_SERVICE, message, 4))
+        return false;
     unsigned int receivedService = 0;
     byte receivedMessage[30];
     byte sender[4];
     int receivedLen = 0;
     boolean broadcast;
     if(receive(2000, &broadcast, sender, &receivedService, receivedMessage, &receivedLen)) {
-        if((broadcast) && (receivedService == TIME_SERVICE) && (receivedLen>=sizeof(timePacket))){
+        if((!broadcast) && (receivedService == TIME_SERVICE) && (receivedLen>=sizeof(timePacket))){
             timePacket pkt = *((timePacket *) receivedMessage);
             setTime( pkt.timestamp );
+            return true;
         }
     }
+    return false;
 }
 
-void serveTime(){
+boolean serveTime(byte* address){
     unsigned long t = getTime();
     if(t != 0){
         timePacket pkt;
         pkt.timestamp =t;
-        sendToBroadcast(TIME_SERVICE, (byte *) &pkt, sizeof(pkt));
+        return sendToSensorino(address, TIME_SERVICE, (byte *) &pkt, sizeof(pkt));
     }
+    return false;
 }
 
-void askServerTime(){
+boolean askServerTime(){
     Serial.println("{ \"command\" : \"getTime\" }");
     char buff[100];
     String timestring = readLineFromSerial(buff);
-    if(timestring != NULL)
-    parseServerTime(timestring);
-}
-
-void parseServerTime(String line){
-    //Expected format { "time" : 1391796357 }
-    if(line.length() >= 21){
-        String number = line.substring(11);
-        int len = number.length();
-        char buff[len+1];
-        number.toCharArray(buff, len);
-        buff[len]='\0';
-        unsigned long ts = strtoul(buff, NULL, 10);
-        setTime(ts);
+    if(timestring != NULL){
+        //Expected format { "time" : 1391796357 }
+        if(timestring.length() >= 21){
+            String number = timestring.substring(11);
+            int len = number.length();
+            char buff[len+1];
+            number.toCharArray(buff, len);
+            buff[len]='\0';
+            unsigned long ts = strtoul(buff, NULL, 10);
+            setTime(ts);
+            return true;
+        }
     }
+    return false;
 }

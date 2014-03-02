@@ -22,6 +22,16 @@ extern "C"
 #include <avr/power.h>
 #include <avr/wdt.h>
 
+//Addresses:
+byte broadCastAddress[4] = {BROADCAST_ADDR};
+byte baseAddress[4] = {BASE_ADDR};
+byte thisAddress[4] = {1,2,3,4};
+
+/** Pin used to wake up the sensorino on a change of level
+ */
+int wakeUpPin = -1; //-1 means not activated
+
+volatile int periodicWakeUpCounter = -1; //-1 means not activated
 
 void configure(byte chipEnablePin, byte chipSelectPin, byte irqPin, byte myAdd[]) {
     NRF24::configure(chipEnablePin, chipSelectPin, irqPin);
@@ -104,9 +114,9 @@ void wakeUpPeriodically(byte _8secsmult){
 
 //ISR of the watchdog
 ISR( WDT_vect ) {
-    periodicWakeUpCounter++;
     if(periodicWakeUpCounter <0)
         periodicWakeUpCounter = 0;
+    periodicWakeUpCounter++;
     if(periodicWakeUpCounter % wakeupAfter != 0){
         keepSleeping = true;
     } else {
@@ -129,7 +139,6 @@ void sleep(){
     //interrupt can wake up the MCU.
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
     sleep_enable();
-
     //Register the pin change interrupt, if any
     if(wakeUpPin != -1){
         PCICR |= (1 << pinToIE(wakeUpPin));
@@ -150,11 +159,17 @@ void sleep(){
     //Let's sleep !
     keepSleeping = true;
     while(keepSleeping){
+        // turns BOD off, must be done right before sleep
+        #ifdef BODS
+        MCUCR |= (1<<BODS) | (1<<BODSE);
+        MCUCR &= ~(1<<BODSE);
+        #endif
         sleep_mode();
     }
 
     //Here we wake up
     sleep_disable();
+
     //deactivate watchdog and interrupts in case they weren't
     wdt_disable();
     if(wakeUpPin != -1){
@@ -164,7 +179,6 @@ void sleep(){
 }
 
 void composeBasePacket(byte* buffer, unsigned int service, byte* data, int len){
-    int totlen = 6 + len;
     buffer[0] = thisAddress[0];
     buffer[1] = thisAddress[1];
     buffer[2] = thisAddress[2];
@@ -219,3 +233,4 @@ boolean receive(unsigned int timeout, boolean* broadcast, byte* sender,
     }
     return false;
 }
+
