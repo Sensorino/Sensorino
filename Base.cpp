@@ -58,11 +58,9 @@ boolean sendToSensorino(byte address[], word service, byte* data, int len){
 }
 
 
-String readLineFromSerial(char* buffer){
-    int chars = Serial.readBytesUntil('\n', buffer, 100);
-    char stringbuff[chars+1];
-    for(int i=0; i<chars; i++)
-        stringbuff[i]= buffer[i];
-    stringbuff[chars] = '\0';
-    return String(stringbuff);
+unsigned long JSONtoULong(char* line, char* data) {
+  char* dataptr = strstr(line, data);
+  if (dataptr != NULL) {
+      return strtoul(dataptr + strlen(data), NULL, 10);
+  } return 0;
 }

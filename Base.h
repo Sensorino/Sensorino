@@ -36,12 +36,12 @@ boolean startBase();
  */
 boolean sendToSensorino(byte address[],word service, byte* data, int len);
 
-/** Reads a line from the serial.
- * It blocks until a line is read or timeout is reached.
- * Timeout must be set in Serial.setTimeout();
- * @param buffer needs a buffer where to store characters
- * @return a String object
+/** Converts a JSON property to a unsigned long.
+ * @param line the line that contains the property
+ * @param data the property to be parsed, it must include the \"...\":
+ * @return the parse unsigned long
  */
-String readLineFromSerial(char* buffer);
+unsigned long JSONtoULong(char* line, char* data);
+
 
 #endif // BASE_H

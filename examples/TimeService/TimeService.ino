@@ -1,6 +1,6 @@
 /** Example of usage of the time service.
  * The Base asks for the time on serial, waits until 5 seconds to get an answer
- * an answer can be given manually (example: { "time" : 1391796357 })
+ * an answer can be given manually (example: { "time": 1391796357 })
  * The Sensorino node asks for the time to the base periodically and sets it
  * when received.
  */

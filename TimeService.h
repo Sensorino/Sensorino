@@ -48,7 +48,7 @@ boolean serveTime(byte* address);
 /** Time protocol with server through serial.
  * Used by the Base node.
  * Arduino sends { "command" : "getTime" }
- * Server answers: { "time" : 1391796357 } (seconds since Jan 01 1970)
+ * Server answers: { "time": 1391796357 } (seconds since Jan 01 1970)
  * Arduino sets internal time.
  * @return true on success
  */

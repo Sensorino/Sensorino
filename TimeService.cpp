@@ -61,21 +61,15 @@ boolean serveTime(byte* address){
 }
 
 boolean askServerTime(){
-    Serial.println("{ \"command\" : \"getTime\" }");
+    Serial.println("{ \"command\": \"getTime\" }");
     char buff[100];
-    String timestring = readLineFromSerial(buff);
-    if(timestring != NULL){
-        //Expected format { "time" : 1391796357 }
-        if(timestring.length() >= 21){
-            String number = timestring.substring(11);
-            int len = number.length();
-            char buff[len+1];
-            number.toCharArray(buff, len);
-            buff[len]='\0';
-            unsigned long ts = strtoul(buff, NULL, 10);
-            setTime(ts);
+    int chars = Serial.readBytesUntil('\n', buff, 100);
+    if(chars >=21){
+        //Expected format { "time": 1391796357 }
+        unsigned long ts = JSONtoULong(buff, "\"time\":");
+        setTime(ts);
+        if(ts != 0)
             return true;
-        }
     }
     return false;
 }
