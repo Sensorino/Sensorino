@@ -58,8 +58,9 @@ void serverSendRGB(byte* address, RGBPacket rgb);
 
 /** Parses a line coming from the server.
  * Example: { "RGB"{ "address": [1,2,3,4], "red": 100, "green": 200 "blue": 0, "blinkONtime": 1000, "blinkOFFtime": 500 }}
+ * @param address where the address of the sensorino will be written, it must initialized
  * @return a RGBPacket with filled parsed data
  */
-RGBPacket parseServerRGB(String line);
+RGBPacket parseServerRGB(String line, byte* address);
 
 #endif // RGBSERVICE_H_INCLUDED

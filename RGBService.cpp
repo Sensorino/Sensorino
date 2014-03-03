@@ -52,7 +52,7 @@ void serverSendRGB(byte* address, RGBPacket rgb){
     Serial.println(" } }");
 }
 
-RGBPacket parseServerRGB(char* line){
+RGBPacket parseServerRGB(char* line, byte* address){
     //Expected format { "RGB"{ "address": [1,2,3,4], "red": 100, "green": 200 "blue": 0, "blinkONtime": 1000, "blinkOFFtime": 500 }}
     RGBPacket pkt;
     pkt.red = 0;
@@ -66,7 +66,17 @@ RGBPacket parseServerRGB(char* line){
         pkt.blue = (byte) JSONtoULong(line, "\"blue\":");
         pkt.blinkONtime = (byte) JSONtoULong(line, "\"blinkONtime\":");
         pkt.blinkOFFtime = (byte) JSONtoULong(line, "\"blinkOFFtime\":");
-    //TODO: the address !!!
+        char* addrstrs[4];
+        int len=0;
+        char* pt = JSONsearchDataName(line, "address");
+        JSONtoStringArray(line, addrstrs, &len);
+        if(len == 4){
+            address[0] = (byte) strtoul(addrstrs[0], NULL, 10);
+            address[1] = (byte) strtoul(addrstrs[1], NULL, 10);
+            address[2] = (byte) strtoul(addrstrs[2], NULL, 10);
+            address[3] = (byte) strtoul(addrstrs[3], NULL, 10);
+        }
+        return pkt;
     }
 }
 
