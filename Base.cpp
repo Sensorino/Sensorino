@@ -57,10 +57,79 @@ boolean sendToSensorino(byte address[], word service, byte* data, int len){
     return nRF24.send(pkt, 6+len, false);
 }
 
+void JSONtoStringArray(char* line, char** arr, int* len) {
+    *len = 0;
+    if(line == NULL) return;
+    char* substrstart = line;
+    int level = 0;
+    int arridx = 0;
+    for(int i=0; i<strlen(line);i++){
+        char* ptr = line +i;
+        if(ptr == NULL) return;
+        if(*ptr == '[') {
+            if(level == 0){
+                arr[arridx] = ptr+1;
+                arridx++;
+            }
+            level ++;
+        }
+        if((*ptr == ',') && (level == 1)){
+             arr[arridx] = ptr+1;
+             arridx++;
+        }
+        if(*ptr == ']'){
+            if(level == 0) break;
+            level --;
+        }
+    }
+    *len = arridx;
+}
 
-unsigned long JSONtoULong(char* line, char* data) {
-  char* dataptr = strstr(line, data);
+void removeSpaces(char* source){
+  char* i = source;
+  char* j = source;
+  while(*j != 0) {
+    *i = *j++;
+    if(*i != ' ')
+      i++;
+  }
+  *i = 0;
+}
+
+char* JSONsearchDataName(char* line, char* dataname){
+    char* dataptr = strstr(line, dataname);
+    char* ptr = dataptr + strlen(dataname);
+    for(int i=0; i<strlen(dataptr); i++){
+        ptr += i;
+        if(*ptr == ':'){
+            return ptr+1;
+        }
+    }
+    return NULL;
+}
+
+unsigned long JSONtoULong(char* line, char* dataName) {
+  char* dataptr = JSONsearchDataName(line, dataName);
   if (dataptr != NULL) {
-      return strtoul(dataptr + strlen(data), NULL, 10);
+      return strtoul(dataptr, NULL, 10);
   } return 0;
+}
+
+double JSONtoDouble(char* line, char* dataName) {
+  char* dataptr = JSONsearchDataName(line, dataName);
+  if (dataptr != NULL) {
+      return strtod(dataptr, NULL);
+  } return 0;
+}
+
+boolean JSONtoBoolean(char* line, char* dataName) {
+  char* dataptr = JSONsearchDataName(line, dataName);
+  if (dataptr != NULL) {
+        if((toupper(dataptr[0]) == 'T')&&
+           (toupper(dataptr[1]) == 'R')&&
+           (toupper(dataptr[2]) == 'U')&&
+           (toupper(dataptr[3]) == 'E'))
+           return true;
+      else return false;
+  } return false;
 }

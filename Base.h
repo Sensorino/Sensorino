@@ -36,12 +36,50 @@ boolean startBase();
  */
 boolean sendToSensorino(byte address[],word service, byte* data, int len);
 
+//JSON rough parseer
+
+
+/** Removes spaces from a line.
+ * Rewrites the same line.
+ * @param line the line where spaces have to be removed
+ */
+void removeSpaces(char* line);
+
+/** Separates an array into an array of strings.
+ * @param line a pointer to the line to be analyzed
+ * @param arr a pre-initialized array of char*
+ * @param len the length of the resulting array
+ */
+void JSONtoStringArray(char* line, char** arr, int* len);
+
+/** Looks for the start of a data, given its name
+ * example: search for "data" returns a pointer next to the : after "data" has been found
+ * @param line the line where to look into
+ * @param dataname the name of the data without the ".." and :
+ * @return the pointer where the data starts (aftert the :)
+ */
+char* JSONsearchDataName(char* line, char* dataname);
+
 /** Converts a JSON property to a unsigned long.
  * @param line the line that contains the property
- * @param data the property to be parsed, it must include the \"...\":
- * @return the parse unsigned long
+ * @param dataName the property to be parsed, should not include the \"...\":
+ * @return the parsed unsigned long
  */
-unsigned long JSONtoULong(char* line, char* data);
+unsigned long JSONtoULong(char* line, char* dataName);
+
+/** Converts a JSON property to a double.
+ * @param line the line that contains the property
+ * @param dataName the property to be parsed, should not include the \"...\":
+ * @return the parsed double
+ */
+double JSONtoDouble(char* line, char* dataName);
+
+/** Converts a JSON property to boolean.
+ * @param line the line to be parsed
+ * @param dataName the name of the property
+ * @return the boolean value
+ */
+boolean JSONtoBoolean(char* line, char* dataName);
 
 
 #endif // BASE_H
