@@ -36,3 +36,23 @@ void serverSendSwitch(byte* address, switchPacket sw){
     Serial.print(sw.status >0? "true":"false");
     Serial.println(" } }");
 }
+
+
+switchPacket serverParseSwitch(char* line, byte* address){
+    switchPacket pkt;
+    pkt.status = false;
+    if(line != NULL){
+        pkt.status = JSONtoBoolean(line, "status");
+        char* addrstrs[4];
+        int len=0;
+        char* pt = JSONsearchDataName(line, "address");
+        JSONtoStringArray(line, addrstrs, &len);
+        if(len == 4){
+            address[0] = (byte) strtoul(addrstrs[0], NULL, 10);
+            address[1] = (byte) strtoul(addrstrs[1], NULL, 10);
+            address[2] = (byte) strtoul(addrstrs[2], NULL, 10);
+            address[3] = (byte) strtoul(addrstrs[3], NULL, 10);
+        }
+    }
+    return pkt;
+}

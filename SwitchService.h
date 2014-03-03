@@ -40,4 +40,11 @@ switchPacket parseSwitch(byte* data);
  */
 void serverSendSwitch(byte* address, switchPacket sw);
 
+/** Parses a switch command coming from the server.
+ * Example: { "Switch"{ "address": [1,2,3,4], "status": true }}
+ * @param address where the address of the sensorino will be written, it must initialized
+ * @return a switchPacket with filled parsed data
+ */
+switchPacket serverParseSwitch(char* line, byte* address);
+
 #endif // SWITCHSERVICE_H_INCLUDED
