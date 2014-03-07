@@ -234,3 +234,8 @@ boolean receive(unsigned int timeout, boolean* broadcast, byte* sender,
     return false;
 }
 
+void(* resetf) (void) = 0;
+
+void reset(){
+    resetf();
+}

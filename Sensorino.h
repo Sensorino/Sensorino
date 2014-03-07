@@ -124,5 +124,8 @@ boolean sendToBroadcast(unsigned int service, byte* data, int len);
  */
 boolean receive(unsigned int timeout, boolean* broadcast, byte* sender, unsigned int* service, byte* data, int* len);
 
+/** Resets sensorino.
+ */
+void reset();
 
 #endif // SENSORINO_H
