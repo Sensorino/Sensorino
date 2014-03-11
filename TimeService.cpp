@@ -10,9 +10,10 @@ extern "C"
 #include "Sensorino.h" //needed to have reference to the periodicWakeUpCounter
 #include "TimeService.h"
 
-unsigned long lastUnixTime = 0;
-unsigned long lastTimeStamp = 0;
+static unsigned long lastUnixTime = 0;
+static unsigned long lastTimeStamp = 0;
 unsigned long lastPeriodicCounter = 0;
+
 
 unsigned long getTime(){
     if(lastUnixTime != 0){
@@ -60,16 +61,25 @@ boolean serveTime(byte* address){
     return false;
 }
 
+void handleTime(char* msg){
+    unsigned long ts = JSONtoULong(msg, "time");
+    setTime(ts);
+}
+
+//just to remember if the handler was arleady put
+static boolean handlerPut = false;
+
 boolean askServerTime(){
-    Serial.println("{ \"command\": \"getTime\" }");
-    char buff[100];
-    int chars = Serial.readBytesUntil('\n', buff, 100);
-    if(chars >=21){
-        //Expected format { "time": 1391796357 }
-        unsigned long ts = JSONtoULong(buff, "\"time\":");
-        setTime(ts);
-        if(ts != 0)
-            return true;
+    if(!handlerPut){
+        addJSONDataHandler("time", handleTime);
+        handlerPut = true;
     }
-    return false;
+
+    Serial.println("{ \"command\": \"getTime\" }");
+
+    readSerial(5000);
+
+    unsigned long ts = getTime();
+    if(ts == 0) return false;
+    else return true;
 }
