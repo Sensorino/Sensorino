@@ -23,7 +23,7 @@ internalsPacket parseInternals(byte* data){
 }
 
 void serverSendInternals(byte* address, internalsPacket ints){
-    Serial.print("{\"internals\"{ ");
+    Serial.print("{\"internals\":{ ");
     Serial.print("\"address\": [");
     Serial.print(address[0]);Serial.print(",");
     Serial.print(address[1]);Serial.print(",");
