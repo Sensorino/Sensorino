@@ -39,7 +39,7 @@ void loop() {
   Serial.println("...waiting for incoming packet....");
   if(receive((unsigned int)5000, &broadcast, sender, &serv, data, &len)){
     if((!broadcast) && (serv == INTERNALS_SERVICE)){
-      Serial.print("Got internals: ");
+      Serial.println("Got internals: ");
       internalsPacket p =  parseInternals(data);
       serverSendInternals(sender, p);
      }
