@@ -14,6 +14,8 @@ extern "C"
 
 #include <Base.h>
 
+#define JSON_STRING_BUFFER_LEN 150
+#define JSON_HANDLERS_LEN 5
 
 void configureBase(byte chipEnablePin, byte chipSelectPin, byte irqPin) {
     nRF24.configure(chipEnablePin, chipSelectPin, irqPin);
@@ -85,15 +87,85 @@ void JSONtoStringArray(char* line, char** arr, int* len) {
     *len = arridx;
 }
 
-void removeSpaces(char* source){
-  char* i = source;
-  char* j = source;
-  while(*j != 0) {
-    *i = *j++;
-    if(*i != ' ')
-      i++;
-  }
-  *i = 0;
+void (*JSONhandlers[JSON_HANDLERS_LEN])(char* msg);
+char* words[JSON_HANDLERS_LEN];
+int handlersPtr = 0;
+
+boolean addJSONDataHandler(char* word, void (*h)(char* message)){
+    if(handlersPtr == JSON_HANDLERS_LEN) return false;
+    words[handlersPtr] = word;
+    JSONhandlers[handlersPtr] = h;
+    handlersPtr ++;
+    return true;
+}
+
+
+static char buffer[JSON_STRING_BUFFER_LEN];
+static int buffPtr = 0;
+static int level =0;
+static boolean inQuotes = false;
+
+static char firstWordBuff[20];
+static int firstWordBuffPtr = 0;
+static boolean inFirstWord = false;
+
+void readSerial(int mis){
+    long now=  millis();
+
+    while ((millis()-now < mis) || (Serial.available() >0)) {
+        if(!Serial.available()) continue;
+        char b = Serial.read();
+
+        if(b=='"'){
+            if(inQuotes){ //not in quote anymore
+                inQuotes = false;
+                inFirstWord = false;
+            } else { //in quote
+                inQuotes = true;
+                if(firstWordBuffPtr == 0){
+                    inFirstWord = true;
+                }
+            }
+        }
+        if(b=='{'){
+            level++;
+        }
+
+        if((level>0) && ((inQuotes) || ((b!=' ')&&(b!='\n')&&(b!='\r')&&(b!='\t')))){
+            buffer[buffPtr] = b;
+            buffPtr++;
+            if(inFirstWord){ //Fill the first word buffer
+                firstWordBuff[firstWordBuffPtr] = b;
+                firstWordBuffPtr++;
+            }
+        }
+
+        if(b=='}'){
+            if(level == 1){
+                //The message is complete, use it
+                char msg[buffPtr+1];
+                for(int i=0; i<buffPtr; i++)
+                    msg[i] = buffer[i];
+                msg[buffPtr] = '\0';
+
+                char firstword[firstWordBuffPtr];
+                for(int i=0; i<firstWordBuffPtr-1; i++)
+                    firstword[i] = firstWordBuff[i+1];
+                firstword[firstWordBuffPtr-1] = '\0';
+
+                //reset buffers
+                buffPtr = 0;
+                firstWordBuffPtr = 0;
+
+                for(int i=0; i<JSON_HANDLERS_LEN; i++){
+                    if(strcmp(firstword, words[i])==0){
+                        JSONhandlers[i](msg);
+                    }
+                }
+            }
+            level--;
+        }
+    }
 }
 
 char* JSONsearchDataName(char* line, char* dataname){

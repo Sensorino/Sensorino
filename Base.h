@@ -38,12 +38,20 @@ boolean sendToSensorino(byte address[],word service, byte* data, int len);
 
 //JSON rough parseer
 
-
-/** Removes spaces from a line.
- * Rewrites the same line.
- * @param line the line where spaces have to be removed
+/** Reads the strings coming from the serial and calls the parsers.
+ * It listens for the time specified in millis and does not exit
+ * until that time has been reached.
+ * Spaces and new lines are removed automatically.
+ * @param millis the time to wait until some data is found
  */
-void removeSpaces(char* line);
+void readSerial(int millis);
+
+/** Adds an handler of JSON messages.
+ * @param word is the JSON message type
+ * @param h is a function that treats the message
+ * @return true on success
+ */
+boolean addJSONDataHandler(char* word, void (*h)(char* message));
 
 /** Separates an array into an array of strings.
  * @param line a pointer to the line to be analyzed
