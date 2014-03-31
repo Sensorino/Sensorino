@@ -65,10 +65,10 @@ boolean startRadio(byte chipEnablePin, byte chipSelectPin, byte irqpin, byte myA
  */
 typedef enum MessageType {
         ERR = 0,
-        CTRL,
-        PUBLISH,
-        SET,
-        REQUEST
+        CTRL = 1,
+        PUBLISH = 2,
+        SET = 3,
+        REQUEST = 4
 } MessageType;
 
 #define MAX_SENSORINO_PAYLOAD_LEN NRF24_MAX_MESSAGE_LEN-5
@@ -101,8 +101,9 @@ boolean receive(unsigned int timeoutMS, boolean* broadcast, byte* sender, Messag
  */
 typedef enum ControlType{
     PING = 0,
-    ADVERT,
-    TIMESYNCH
+    PONG = 1,
+    ADVERT = 2,
+    TIMESYNCH = 3
 } ControlType;
 
 #define MAX_CONTROL_PAYLOAD_LEN MAX_SENSORINO_PAYLOAD_LEN-1
@@ -140,8 +141,8 @@ boolean sendControl(boolean broadcast, byte* destination, ControlType controlT, 
  */
 typedef enum ErrorType{
     SERVICE_UNAVAILABLE = 0,
-    DATA_FORMAT_UNSUPPORTED,
-    CANNOT_PARSE_DATA,
+    DATA_FORMAT_UNSUPPORTED = 2,
+    CANNOT_PARSE_DATA = 3,
 } ErrorType;
 
 #define MAX_ERROR_PAYLOAD_LEN MAX_SENSORINO_PAYLOAD_LEN - 1
