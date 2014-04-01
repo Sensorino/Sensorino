@@ -1,4 +1,12 @@
 /** Trivial JSON messages parser for Sensorino base.
+ * messages follow a known structure depending on the type of message:
+ * { "publish": { "address": [1,2,3,4], "serviceID": 2, "serviceInstanceID": 0, "data": { ..... } } }
+ * { "set": { "address": [1,2,3,4], "serviceID": 2, "serviceInstanceID": 0, "data": { ..... } } }
+ * { "request": { "address": [1,2,3,4], "serviceID": 2, "serviceInstanceID": 0, "data": { ..... } } }
+ * { "control": { "address": [1,2,3,4], "type": "ADVERT", "data": { ..... } }
+ * { "control": { "address": [1,2,3,4], "type": "PING", "data": { ..... } } }
+ * { "control": { "address": [1,2,3,4], "type": "PONG", "data": { ..... } } }
+ * { "error": { "address": [1,2,3,4], "type": "SERVICE_UNAVAILABLE", "data": { ..... } } }
  *
  * Author: Dario Salvi (dariosalvi78 at gmail dot com)
  *

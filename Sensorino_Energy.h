@@ -23,7 +23,7 @@ void reset();
  * @param pins a set of pin numbers on the change of which we want the board to wake up
  * @param pinN the number of pins, if <=0 the pins arenot considered
  */
-void sleep(int seconds, int* pins, int pinN);
+void sleepUntil(int seconds, int* pins, int pinN);
 
 /** Gives the number of seconds the Sensorino has been sleeping since it has been switched on
  * @return the total number of seconds it has slept

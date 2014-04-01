@@ -29,7 +29,8 @@ void loop() {
     Serial.print(seconds);
     Serial.println(" seconds...");
     delay(100);
-    sleep(seconds, pins, 1);
+    sleepUntil(seconds, pins, 1);
+
     Serial.println("Wakeup !");
     Serial.print("wait 2 secs");
     delay(1000);Serial.print(".");

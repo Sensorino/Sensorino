@@ -78,7 +78,7 @@ ISR(WDT_vect) {
 }
 
 
-void sleep(int seconds, int* pins, int pinN){
+void sleepUntil(int seconds, int* pins, int pinN){
     if(seconds == 0)
         return;
 

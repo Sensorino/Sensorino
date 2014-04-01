@@ -28,13 +28,24 @@ public:
             int sleepPeriod, int wakeupPinsN, ...);
 
     /** Retrieves the service instance ID
-    */
+     * @return the service instance ID
+     */
     byte getServiceInstanceID();
 
+    /** Retrieves the sleeping period of the service
+     * @return the sleeping period in seconds,
+     * beign <0 (sleep forever), 0 (no sleep) or >0 (sleep a number of secs)
+     */
     int getSleepPeriod();
 
+    /** If the service has to be woken up by pins, this indicates how many
+     * @return the number of pins to be woken up by
+     */
     int getWakeupPinsNumber();
 
+    /** The pins to be got woken up by
+     * @return an array of integers indicating the pin numbers
+     */
     int* getWakeupPins();
 
 private:

@@ -26,14 +26,26 @@ public:
     */
     unsigned int getServiceTypeID();
 
-    /**
+    /** Virtual function used to initialize the service
+     * @return shall return true if everything went OK
      */
-    virtual void handlePacket(boolean broadcast, MessageType msgType, DataFormat format,
-                              byte* data, unsigned int len);
+    virtual boolean init()=0;
 
-    /**
+    /** Virtual function used to be run periodically or on a pin wakeup
+     * @return shall return true if everything was OK
      */
-    virtual void run();
+    virtual boolean run()=0;
+
+    /** Virtual function used to handle a message coming from another node.
+     * @param broadcast is true if the message was in broadcast
+     * @param msgType the message type
+     * @param format the data format
+     * @param data the associated data if any
+     * @param len the length of the data
+     */
+    virtual void handleMessage(boolean broadcast, MessageType msgType, DataFormat format,
+                              byte* data, int len)=0;
+
 
 private:
     /** The service number */

@@ -1,9 +1,7 @@
 /** Trivial JSON messages parser for Sensorino base.
- * messages follow a known structure:
- * { "message type": { "address (source or destination)": [1,2,3,4], ... } }
- * then depending on the type of message:
+ * messages follow a known structure depending on the type of message:
  * { "publish": { "address": [1,2,3,4], "serviceID": 2, "serviceInstanceID": 0, "data": { ..... } } }
- * { "set": { "address": [1,2,3,4], "serviceID": 2, "serviceInstanceID": 0, "state": { ..... } } }
+ * { "set": { "address": [1,2,3,4], "serviceID": 2, "serviceInstanceID": 0, "data": { ..... } } }
  * { "request": { "address": [1,2,3,4], "serviceID": 2, "serviceInstanceID": 0, "data": { ..... } } }
  * { "control": { "address": [1,2,3,4], "type": "ADVERT", "data": { ..... } }
  * { "control": { "address": [1,2,3,4], "type": "PING", "data": { ..... } } }
@@ -86,7 +84,7 @@ int makeJSONService(char* buffer, MessageType msgtype, byte* address, unsigned i
 /** Reads the strings coming from the serial and calls the parsers.
  * It listens for the time specified in millis and does not exit
  * until that time has been reached.
- * Spaces and new lines are removed automatically.
+ * Spaces, tabs and new lines are removed automatically.
  * @param millis the time to wait until some data is found
  */
 void readSerial(int millis);
