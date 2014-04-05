@@ -6,11 +6,13 @@
 #include <nRF24.h>
 #include <Sensorino.h>
 
+const int serviceNumber  = 100;
+
 //this implements a service for the Sensorino node (not the Base !!!)
 class TestService: public SensorinoService{
 
 public:
-    //a data structure used to hold data of the service
+    //a data structure used to hold data treated by this service
     struct testData{
         boolean b;
         int i;
@@ -18,7 +20,7 @@ public:
 
     //constructor: it tells that the service number is 100, the instance is a parameter
     //it has to sleep for 5 seconds and is not supposed to be woken up by pins
-    TestService(byte instance): SensorinoService(100, instance, 5, 0){
+    TestService(byte instance): SensorinoService(serviceNumber, instance, 5, 0){
     }
 
     //initializes the service at startup
@@ -38,7 +40,7 @@ public:
         testData data;
         data.b = true;
         data.i = 10;
-        return sendService(false, baseAddress, 100, 0, ADHOC, (byte*) &data, sizeof(testData));
+        return sendService(false, baseAddress, serviceNumber, 0, ADHOC, (byte*) &data, sizeof(testData));
     }
 };
 

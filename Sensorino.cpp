@@ -7,6 +7,10 @@
  *
  * Licensed under the GPL license http://www.gnu.org/copyleft/gpl.html
  */
+#ifdef __cplusplus
+extern "C"
+#endif
+
 #include <Sensorino.h>
 
 #define MAX_PINS MAX_WAKEUP_PINS * MAX_SERVICES

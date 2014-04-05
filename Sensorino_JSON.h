@@ -90,22 +90,16 @@ int makeJSONService(char* buffer, MessageType msgtype, byte* address, unsigned i
 void readSerial(int millis);
 
 /** Adds an handler of control JSON messages.
- * @param ctrltype the control type
  * @param h is a function that treats the message
- * @return true on success
  */
-boolean addJSONControlMessageHandler(ControlType ctrltype, void (*h)(byte* address, char* data));
+void setJSONControlMessageHandler(void (*h)(ControlType ctrlt, byte* address, char* data));
 
 /** Adds an handler of error JSON messages.
- * @param errtype the error type
  * @param h is a function that treats the message
- * @return true on success
  */
-boolean addJSONErrorMessageHandler(ErrorType errtype, void (*h)(byte* address, char* data));
+void setJSONErrorMessageHandler(void (*h)(ErrorType errt, byte* address, char* data));
 
 /** Adds an handler of service JSON messages.
- * @param serviceID the service identifier
  * @param h is a function that treats the message
- * @return true on success
  */
-boolean addJSONServiceMessageHandler(unsigned int serviceID, void (*h)(MessageType msgtype, byte* address, byte servInstID, char* message));
+void setJSONServiceMessageHandler(void (*h)(MessageType msgtype, byte* address,unsigned int serviceID, byte servInstID, char* message));

@@ -90,7 +90,7 @@ boolean JSONtoBoolean(char* line, char* dataName) {
 }
 
 
-static void messageTypeToString(char* buffer, MessageType msgtype){
+void messageTypeToString(char* buffer, MessageType msgtype){
 switch(msgtype){
     case PUBLISH:
         strcpy(buffer, "\"publish\"");
@@ -111,7 +111,7 @@ switch(msgtype){
 }
 
 
-static MessageType stringToMessageType(char* str){
+MessageType stringToMessageType(char* str){
     if((toupper(str[0]) == 'C') && (toupper(str[1]) == 'O') && (toupper(str[2]) == 'N') &&
        (toupper(str[3]) == 'T') && (toupper(str[4]) == 'R') && (toupper(str[5]) == 'O') &&
        (toupper(str[6]) == 'L')) return CTRL;
@@ -144,7 +144,7 @@ switch(ctrltype){
     }
 }
 
-static ControlType stringToControlType(char* str){
+ControlType stringToControlType(char* str){
     if((toupper(str[0]) == 'P')&&(toupper(str[1]) == 'I')&&(toupper(str[2]) == 'N')&&(toupper(str[3]) == 'G')) return PING;
     else if((toupper(str[0]) == 'P')&&(toupper(str[1]) == 'O')&&(toupper(str[2]) == 'N')&&(toupper(str[3]) == 'G')) return PONG;
     else if((toupper(str[0]) == 'A')&&(toupper(str[1]) == 'D')&&(toupper(str[2]) == 'V')&&(toupper(str[3]) == 'E')&&
@@ -154,7 +154,7 @@ static ControlType stringToControlType(char* str){
        (toupper(str[8]) == 'H')) return TIMESYNCH;
 }
 
-static void errorTypeToString(char* buffer, ErrorType errtype){
+void errorTypeToString(char* buffer, ErrorType errtype){
 switch(errtype){
     case SERVICE_UNAVAILABLE:
         strcpy(buffer, "\"SERVICE_UNAVAILABLE\"");
@@ -169,7 +169,7 @@ switch(errtype){
 }
 
 
-static ErrorType stringToErrorType(char* str){
+ErrorType stringToErrorType(char* str){
     if((toupper(str[0]) == 'S') && (toupper(str[1]) == 'E') && (toupper(str[2]) == 'R') &&
        (toupper(str[3]) == 'V') && (toupper(str[4]) == 'I') && (toupper(str[5]) == 'C') &&
        (toupper(str[6]) == 'E') && (toupper(str[7]) == '_')) return SERVICE_UNAVAILABLE;
@@ -242,40 +242,22 @@ int makeJSONService(char* buffer, MessageType msgtype, byte* address, unsigned i
 }
 
 
-void (*JSONCtrlhandlers[MAX_JSON_CTRL_HANDLERS_LEN])(byte* address, char* message);
-ControlType ctrlHandlersType[MAX_JSON_CTRL_HANDLERS_LEN];
-int ctrlHandlersPtr = 0;
+void (*JSONCtrlhandler)(ControlType ctrltype, byte* address, char* message);
 
-boolean addJSONControlMessageHandler(ControlType ctrltype, void (*h)(byte* address, char* message)){
-    if(ctrlHandlersPtr == MAX_JSON_CTRL_HANDLERS_LEN) return false;
-    ctrlHandlersType[ctrlHandlersPtr] = ctrltype;
-    JSONCtrlhandlers[ctrlHandlersPtr] = h;
-    ctrlHandlersPtr ++;
-    return true;
+void setJSONControlMessageHandler(void (*h)(ControlType ctrltype, byte* address, char* message)){
+    JSONCtrlhandler = h;
 }
 
-void (*JSONErrhandlers[MAX_JSON_ERR_HANDLERS_LEN])(byte* address, char* message);
-ErrorType errHandlersType[MAX_JSON_ERR_HANDLERS_LEN];
-int errHandlersPtr = 0;
+void (*JSONErrhandler)(ErrorType errtype, byte* address, char* message);
 
-boolean addJSONErrorMessageHandler(ErrorType errtype, void (*h)(byte* address, char* message)){
-    if(errHandlersPtr == MAX_JSON_ERR_HANDLERS_LEN) return false;
-    errHandlersType[errHandlersPtr] = errtype;
-    JSONErrhandlers[errHandlersPtr] = h;
-    errHandlersPtr ++;
-    return true;
+void setJSONErrorMessageHandler(void (*h)(ErrorType errtype, byte* address, char* message)){
+    JSONErrhandler = h;
 }
 
-void (*JSONServhandlers[MAX_JSON_SERV_HANDLERS_LEN])(MessageType msgtype, byte* address, byte servInstID, char* message);
-unsigned int servHandlersIDs[MAX_JSON_SERV_HANDLERS_LEN];
-int servHandlersPtr = 0;
+void (*JSONServhandler)(MessageType msgtype, byte* address, unsigned int serviceID, byte servInstID, char* message);
 
-boolean addJSONServiceMessageHandler(unsigned int serviceID, void (*h)(MessageType msgtype, byte* address, byte servInstID, char* message)){
-    if(servHandlersPtr == MAX_JSON_SERV_HANDLERS_LEN) return false;
-    servHandlersIDs[servHandlersPtr] = serviceID;
-    JSONServhandlers[servHandlersPtr] = h;
-    servHandlersPtr ++;
-    return true;
+void setJSONServiceMessageHandler(void (*h)(MessageType msgtype, byte* address, unsigned int serviceID, byte servInstID, char* message)){
+    JSONServhandler = h;
 }
 
 
@@ -382,12 +364,8 @@ void readSerial(int mis){
                         datastr = new char[len];
                         strcpy(datastr, databff);
                     }
-                    //call handlers
-                    for(int i=0; i< ctrlHandlersPtr; i++){
-                        if(ctrltype == ctrlHandlersType[i]){
-                            JSONCtrlhandlers[i](address, datastr);
-                        }
-                    }
+                    //call handler
+                    JSONCtrlhandler(ctrltype, address, datastr);
                 }
                 //{ "error": { "address": [1,2,3,4], "type": "SERVICE_UNAVAILABLE", "data": { "text": "test" } } }
                 else if(msgtype == ERR){
@@ -401,12 +379,8 @@ void readSerial(int mis){
                         datastr = new char[len];
                         strcpy(datastr, databff);
                     }
-                    //call handlers
-                    for(int i=0; i< errHandlersPtr; i++){
-                        if(errtype == errHandlersType[i]){
-                            JSONErrhandlers[i](address, datastr);
-                        }
-                    }
+                    //call handler
+                    JSONErrhandler(errtype,address, datastr);
                 }
                 //{ "publish": { "address": [1,2,3,4], "serviceID": 2, "serviceInstanceID": 0, "data": { ..... } } }
                 //{ "set": { "address": [1,2,3,4], "serviceID": 2, "serviceInstanceID": 0, "data": { ..... } } }
@@ -424,12 +398,7 @@ void readSerial(int mis){
                         strcpy(datastr, databff);
                     }
                     //call handlers
-                    for(int i=0; i< servHandlersPtr; i++){
-                        if(servID == servHandlersIDs[i]){
-                            JSONServhandlers[i](msgtype, address, servInstID, datastr);
-                        }
-                    }
-
+                    JSONServhandler(msgtype, address, servID, servInstID, datastr);
                 }
             }
             level--;

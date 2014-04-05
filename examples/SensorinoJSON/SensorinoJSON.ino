@@ -10,8 +10,8 @@
 #include <nRF24.h>
 #include <Sensorino_JSON.h>
 
-void handlePing(byte* address, char* data){
-    Serial.print("Got a ping message ! address: ");
+void handleCtrl(ControlType ctrlt, byte* address, char* data){
+    Serial.print("Got a control message ! address: ");
     Serial.print(address[0]);Serial.print(",");
     Serial.print(address[1]);Serial.print(",");
     Serial.print(address[2]);Serial.print(",");
@@ -27,7 +27,7 @@ void handlePing(byte* address, char* data){
 }
 
 
-void handleSUError(byte* address, char* data){
+void handleError(ErrorType errt, byte* address, char* data){
     Serial.print("Got an error message ! address: ");
     Serial.print(address[0]);Serial.print(",");
     Serial.print(address[1]);Serial.print(",");
@@ -43,7 +43,7 @@ void handleSUError(byte* address, char* data){
     Serial.print(buffer);
 }
 
-void handleService10Handler(MessageType msgt, byte* address, byte servInst, char* data){
+void handleServiceHandler(MessageType msgt, byte* address, unsigned int serviceID, byte servInst, char* data){
     Serial.print("Got a service message ! type: ");
     Serial.print(msgt);
     Serial.print(" address: ");
@@ -66,9 +66,9 @@ void handleService10Handler(MessageType msgt, byte* address, byte servInst, char
 void setup() {
   Serial.begin(57600);
   Serial.println("Sensorino JSON parsing example");
-  if(!addJSONControlMessageHandler(PING, handlePing)) Serial.println("cannot add handler");
-  if(!addJSONErrorMessageHandler(SERVICE_UNAVAILABLE, handleSUError)) Serial.println("cannot add handler");
-  if(!addJSONServiceMessageHandler(10, handleService10Handler)) Serial.println("cannot add handler");
+  setJSONControlMessageHandler(handleCtrl);
+  setJSONErrorMessageHandler(handleError);
+  setJSONServiceMessageHandler(handleServiceHandler);
 }
 
 void loop() {

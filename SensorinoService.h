@@ -10,7 +10,6 @@
 
 #include <Service.h>
 
-
 #define MAX_WAKEUP_PINS 5
 
 
@@ -47,6 +46,16 @@ public:
      * @return an array of integers indicating the pin numbers
      */
     int* getWakeupPins();
+
+    /** Virtual function used to handle a message coming from the Base.
+     * @param broadcast is true if the message was in broadcast
+     * @param msgType the message type
+     * @param format the data format
+     * @param data the associated data if any
+     * @param len the length of the data
+     */
+    virtual void handleMessage(boolean broadcast, MessageType msgType, DataFormat format,
+                              byte* data, int len)=0;
 
 private:
 
