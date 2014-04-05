@@ -73,20 +73,19 @@ void setup() {
   if(!startRadio(9, 10, 2, myAddr)) Serial.println("Cannot init!");
 
   //add services
-  addService(&service);
+  addBaseService(&service);
 
   //init services
-  if(!initServices()) Serial.println("Cannot init services!");
+  if(!initBaseServices()) Serial.println("Cannot init services!");
 
 }
 
 void loop() {
     //run all services
     Serial.println("..going to run services");
-    runServices();
+    runBaseServices();
 
     //receive packets if something is being waited
     Serial.println("..going to receive");
-    receive(10000);
+    receiveBase(10000);
 }
-

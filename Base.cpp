@@ -28,13 +28,13 @@ static void handleJSONServiceMessages(MessageType msgtype, byte* address,unsigne
     }
 }
 
-boolean addService(BaseService* serv){
+boolean addBaseService(BaseService* serv){
     if(servicesN >= MAX_SERVICES) return false;
     services[servicesN] = serv;
     servicesN ++;
 }
 
-boolean initServices(){
+boolean initBaseServices(){
     setJSONServiceMessageHandler(handleJSONServiceMessages);
 
     boolean OK = true;
@@ -43,7 +43,7 @@ boolean initServices(){
     return OK;
 }
 
-boolean runServices(){
+boolean runBaseServices(){
     boolean OK = true;
     for(int i=0; i<servicesN; i++){
         if(!services[i]->run()) OK = false;
@@ -51,7 +51,7 @@ boolean runServices(){
     return OK;
 }
 
-boolean receive(unsigned int timeoutMS){
+boolean receiveBase(unsigned int timeoutMS){
     boolean broadcast;
     byte sender[4];
     MessageType msgType;

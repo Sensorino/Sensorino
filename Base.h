@@ -21,23 +21,23 @@
  * @param serv a pointer to a BaseService
  * @return true on success
  */
-boolean addService(BaseService* serv);
+boolean addBaseService(BaseService* serv);
 
 /** Initializes all registered services
  * @return true if initialization was OK
  */
-boolean initServices();
+boolean initBaseServices();
 
 /** Runs all registered services
  * @return true if running was OK for all
  */
-boolean runServices();
+boolean runBaseServices();
 
 /** Waits for incoming packets and dispatches them to services
  * this function should be always called
  * @param timeoutMS a timeout in milliseconds
  * @return true if a packet was received
  */
-boolean receive(unsigned int timeoutMS);
+boolean receiveBase(unsigned int timeoutMS);
 
 #endif // BASE_H_INCLUDED
