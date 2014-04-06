@@ -83,7 +83,7 @@ void loop() {
     delay(2000);
     if(!sendError(false, baseAddress, SERVICE_UNAVAILABLE, (byte*)"how are you", 12)) Serial.println("Cannot send error");
     delay(2000);
-    if(!sendService(false, baseAddress, 100, 1, ADHOC, (byte*)"fine thanks", 12)) Serial.println("Cannot send error");
+    if(!sendService(false, baseAddress, 100, 1, PUBLISH, ADHOC, (byte*)"fine thanks", 12)) Serial.println("Cannot send error");
     delay(2000);
 #endif
 }

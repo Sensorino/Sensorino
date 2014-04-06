@@ -153,10 +153,10 @@ void makeServicePayload(byte* payload, unsigned int serviceType, byte serviceIns
 }
 
 boolean sendService(boolean broadcast, byte* destination, unsigned int serviceType, byte serviceInstance,
-                        DataFormat dataF, byte* data, int len){
+                    MessageType msgt, DataFormat dataF, byte* data, int len){
     byte servpl[len +4];
     makeServicePayload(servpl, serviceType, serviceInstance, dataF, data, len);
-    send(broadcast, destination, ERR, servpl, len+1);
+    send(broadcast, destination, msgt, servpl, len+1);
 }
 
 void unmakeServicePayload(byte* payload, int totlen, unsigned int* serviceType,

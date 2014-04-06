@@ -29,10 +29,15 @@ public:
 
     //when a packet is received for this service it is passed to this function
     void  handleMessage(boolean broadcast,byte* source, MessageType msgType, byte serviceInstanceID, DataFormat format, byte* data, int len){
-        Serial.println("Test service received a packet");
+        Serial.print("Test service received a packet: ");
+        testData td = *( (testData*) data);
+        Serial.print("b= ");
+        Serial.print(td.b);
+        Serial.print(" i= ");
+        Serial.println(td.i);
+
         char buffer[200];
 
-        testData td = *( (testData*) data);
         char dataBuffer[100];
         strcpy(dataBuffer, "{ \"b\": ");
         if(td.b) strcat(dataBuffer, "TRUE");
@@ -42,16 +47,22 @@ public:
         strcat(dataBuffer, itoa(td.i, numberBuffer, 10));
         strcat(dataBuffer, " }");
         makeJSONService(buffer, msgType, source, serviceNumber, serviceInstanceID, dataBuffer);
+        Serial.println(buffer);
     }
 
     //parses a JSON request for set
     //try sending { "set": { "address": [1,100,2,200], "serviceID": 100, "serviceInstanceID": 0, "data": { "b": TRUE, "i": 99 } } }
     void handleJSONMessage(MessageType msgtype, byte* address, byte servInstID, char* message){
         if(msgtype == SET){
+            Serial.print("Test service sending a packet: ");
             testData data;
             data.b = JSONtoBoolean("b", message);
             data.i = (int) JSONtoULong("i", message);
-            sendService(false, address, serviceNumber, servInstID, ADHOC, (byte*) &data, sizeof(data));
+            Serial.print("b= ");
+            Serial.print(data.b);
+            Serial.print(" i= ");
+            Serial.println(data.i);
+            sendService(false, address, serviceNumber, servInstID, SET, ADHOC, (byte*) &data, sizeof(data));
         }
     }
 
@@ -87,5 +98,9 @@ void loop() {
 
     //receive packets if something is being waited
     Serial.println("..going to receive");
-    receiveBase(10000);
+    receiveBase(2000);
+
+    //read serial
+    Serial.println("..going to read serial");
+    readSerial(2000);
 }

@@ -30,17 +30,22 @@ public:
 
     //when a packet is received for this service (and instance) it is passed to this function
     void handleMessage(boolean broadcast, MessageType msgType, DataFormat format, byte* data, int len){
-        Serial.print("Test service: received packet");
+        Serial.print("Test service received packet: ");
+        testData pkt = *((testData*)&data);
+        Serial.print("b= ");
+        if(pkt.b) Serial.print("true, i= ");
+        else Serial.print("false, i= ");
+        Serial.println(pkt.i);
     }
 
     //this is called periodically to run the service concretely, here goes the logic that
     //measures stuff, sends and receives data etc.
     boolean run(){
-        Serial.println("Test service: sending a packet");
+        Serial.println("Test service sending a packet");
         testData data;
         data.b = true;
         data.i = 10;
-        return sendService(false, baseAddress, serviceNumber, 0, ADHOC, (byte*) &data, sizeof(testData));
+        return sendService(false, baseAddress, serviceNumber, 0, PUBLISH, ADHOC, (byte*) &data, sizeof(testData));
     }
 };
 
@@ -77,4 +82,3 @@ void loop() {
     delay(100);
     sleep();
 }
-

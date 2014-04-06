@@ -67,14 +67,14 @@ boolean receiveBase(unsigned int timeoutMS){
             unmakeCtrlPayload(databuffer, len, &ctrlt, ctrlData, &datalen);
             //TODO: serve control packet
         }
-        if(msgType == ERR){
+    if(msgType == ERR){
             ErrorType errt;
             byte errData[MAX_ERROR_PAYLOAD_LEN];
             int datalen;
             unmakeErrorPayload(databuffer, len, &errt, errData, &datalen);
             //TODO: serve control packet
-        }
-        if((msgType == PUBLISH)||(msgType == REQUEST)||(msgType == SET)){
+     }
+     if((msgType == PUBLISH)||(msgType == REQUEST)||(msgType == SET)){
             unsigned int serviceID;
             byte serviceInstID;
             DataFormat df;

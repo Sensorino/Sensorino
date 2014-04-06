@@ -214,12 +214,13 @@ void unmakeServicePayload(byte* payload, int payloadlen, unsigned int* serviceID
  * @param destination address of the receiver
  * @param serviceType the service id
  * @param serviceInstance the id of the instance
+ * @param msgt message type
  * @param dataFthe data format type
  * @param data any associated data to send
  * @param len if any data, its length
  */
 boolean sendService(boolean broadcast, byte* destination, unsigned int serviceType, byte serviceInstance,
-                        DataFormat dataF, byte* data, int len);
+                        MessageType msgt, DataFormat dataF, byte* data, int len);
 
 
 #endif // SENSORINO_PROTOCOL_H_INCLUDED
