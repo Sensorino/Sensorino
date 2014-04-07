@@ -54,7 +54,9 @@ public:
     //try sending { "set": { "address": [1,100,2,200], "serviceID": 100, "serviceInstanceID": 0, "data": { "b": TRUE, "i": 99 } } }
     void handleJSONMessage(MessageType msgtype, byte* address, byte servInstID, char* message){
         if(msgtype == SET){
-            Serial.print("Test service sending a packet: ");
+            Serial.print("Test service received a JSON SET command, data: ");
+            Serial.println(message);
+            Serial.print("...sending a packet: ");
             testData data;
             data.b = JSONtoBoolean("b", message);
             data.i = (int) JSONtoULong("i", message);
@@ -92,15 +94,7 @@ void setup() {
 }
 
 void loop() {
-    //run all services
-    Serial.println("..going to run services");
     runBaseServices();
-
-    //receive packets if something is being waited
-    Serial.println("..going to receive");
-    receiveBase(2000);
-
-    //read serial
-    Serial.println("..going to read serial");
-    readSerial(2000);
+    receiveBase(0);
+    readSerial(0);
 }

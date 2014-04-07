@@ -112,18 +112,29 @@ switch(msgtype){
 
 
 MessageType stringToMessageType(char* str){
+
     if((toupper(str[0]) == 'C') && (toupper(str[1]) == 'O') && (toupper(str[2]) == 'N') &&
        (toupper(str[3]) == 'T') && (toupper(str[4]) == 'R') && (toupper(str[5]) == 'O') &&
-       (toupper(str[6]) == 'L')) return CTRL;
-    else if((toupper(str[0]) == 'E') && (toupper(str[1]) == 'R') && (toupper(str[2]) == 'R')&&
-            (toupper(str[3]) == 'O') && (toupper(str[4]) == 'R')) return ERR;
-    else if((toupper(str[0]) == 'P') && (toupper(str[1]) == 'U') && (toupper(str[2]) == 'B')&&
+       (toupper(str[6]) == 'L')){
+        return CTRL;
+    }
+    else if((toupper(str[0]) == 'E') && (toupper(str[1]) == 'R') && (toupper(str[2]) == 'R') &&
+            (toupper(str[3]) == 'O') && (toupper(str[4]) == 'R')){
+        return ERR;
+    }
+    else if((toupper(str[0]) == 'P') && (toupper(str[1]) == 'U') && (toupper(str[2]) == 'B') &&
             (toupper(str[3]) == 'L') && (toupper(str[4]) == 'I') && (toupper(str[5]) == 'S') &&
-            (toupper(str[6]) == 'H')) return PUBLISH;
-    else if((toupper(str[0]) == 'S') && (toupper(str[1]) == 'E') && (toupper(str[2]) == 'T ')) return SET;
-    else if((toupper(str[0]) == 'R') && (toupper(str[1]) == 'E') && (toupper(str[2]) == 'Q')&&
+            (toupper(str[6]) == 'H')){
+        return PUBLISH;
+    }
+    else if((toupper(str[0]) == 'S') && (toupper(str[1]) == 'E') && (toupper(str[2]) == 'T')){
+        return SET;
+    }
+    else if((toupper(str[0]) == 'R') && (toupper(str[1]) == 'E') && (toupper(str[2]) == 'Q') &&
             (toupper(str[3]) == 'U') && (toupper(str[4]) == 'E') && (toupper(str[5]) == 'S') &&
-            (toupper(str[6]) == 'T')) return REQUEST;
+            (toupper(str[6]) == 'T')){
+        return REQUEST;
+    }
 }
 
 
