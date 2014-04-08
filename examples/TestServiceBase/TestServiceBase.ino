@@ -56,10 +56,10 @@ public:
         if(msgtype == SET){
             Serial.print("Test service received a JSON SET command, data: ");
             Serial.println(message);
-            Serial.print("...sending a packet: ");
             testData data;
-            data.b = JSONtoBoolean("b", message);
-            data.i = (int) JSONtoULong("i", message);
+            data.b = JSONtoBoolean(message, "b");
+            data.i = (int) JSONtoULong(message, "i");
+            Serial.print("...sending a packet: ");
             Serial.print("b= ");
             Serial.print(data.b);
             Serial.print(" i= ");
