@@ -21,7 +21,8 @@ public:
      * @param serviceTypeID the unique identifier of the service type
      * @param serviceInstanceID a number that identifies the local instance of the service
      * used if more than an instance is used
-     * @param sleepPeriod
+     * @param sleepPeriod <0 (sleep forever until pa pin wakes up if specified !),
+     * 0 (no sleep) or >0 (sleep a number of secs)
      */
     SensorinoService(unsigned int serviceTypeID, byte serviceInstanceID,
             int sleepPeriod, int wakeupPinsN, ...);

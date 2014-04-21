@@ -81,6 +81,7 @@ boolean receive(unsigned int timeoutMS, boolean* broadcast, byte* sender, Messag
     byte pipe;
     if(nRF24.waitAvailableTimeout(timeoutMS)){
             if(nRF24.recv(&pipe, buffer, &totlen)){
+
                 *broadcast = (pipe == BROADCAST_PIPE);
                 sender[0] = buffer[0];
                 sender[1] = buffer[1];
