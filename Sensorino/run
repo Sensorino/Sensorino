@@ -1,0 +1,1 @@
+g++ Message.cpp test.cpp -I . &&  ./a.out
