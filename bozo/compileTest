@@ -1,0 +1,1 @@
+g++ -isystem gmock/gmock-1.7.0/gtest/include/ -I gmock/gmock-1.7.0/gtest/  -isystem  gmock/gmock-1.7.0/include/ -I gmock -pthread  -I . test_Message.cpp Message.cpp gmock/libgmock.a  -o test
