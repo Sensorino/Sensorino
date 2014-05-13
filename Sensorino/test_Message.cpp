@@ -4,17 +4,9 @@
 // Tests factorial of positive numbers.
 TEST(MessageTest, Misc) {
 
-  uint8_t srcAddress[4];
-  srcAddress[0]=1;
-  srcAddress[1]=2;
-  srcAddress[2]=3;
-  srcAddress[3]=4;
+  uint8_t srcAddress=1;
 
-  uint8_t dstAddress[4];
-  dstAddress[0]=1;
-  dstAddress[1]=2;
-  dstAddress[2]=3;
-  dstAddress[3]=4;
+  uint8_t dstAddress=2;
 
   Message(srcAddress, dstAddress);
 

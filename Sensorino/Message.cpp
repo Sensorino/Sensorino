@@ -1,41 +1,53 @@
 #include <Message.h>
 #include <iostream>
-#include<math.h>
-
-
-typedef union {
-  float f;
-  struct {
-    unsigned int mantisa : 23;
-    unsigned int exponent : 8;
-    unsigned int sign : 1;
-  } parts;
-} double_cast;
+#include <cstring>
 
 
 
-uint8_t Message::staticId=0;
-Message::Message(uint8_t src[], uint8_t dst[])
+
+Message::Message(uint8_t src, uint8_t dst)
 {
- 
+    static uint8_t staticId=0;
     staticId=(staticId+1) % MAX_MESSAGE_ID;
     id=staticId;
 
     payloadLen=0;
 
-    for (int i=0;i<4;i++){ 
-        srcAddress[i]=src[i];
-    }
-
-    for (int i=0;i<4;i++){ 
-        dstAddress[i]=dst[i];
-    }
+    srcAddress=src;
+    dstAddress=dst;
 
 }
 
 uint8_t Message::getId(){
     return id;
 }
+
+void Message::setId(uint8_t i){
+    id=i;
+}
+
+void Message::setType(MessageType t){
+    messageType=t;
+}
+
+
+
+void Message::decode(uint8_t *data, uint8_t len, uint8_t id){
+    setType((MessageType)data[0]);
+    setId(id);
+    setPayload(&data[HEADERS_LENGTH], len - HEADERS_LENGTH);
+}
+
+void Message::setPayload(uint8_t *data, uint8_t len){
+    if (len>PAYLOAD_LENGTH){
+        // too long, fuck you ?
+        len=PAYLOAD_LENGTH;
+    }
+    memcpy(payload, data, len);
+    payloadLen=len; 
+}
+
+
 
 int _addInt(uint8_t *buffer, int value){
     // Value
@@ -44,89 +56,6 @@ int _addInt(uint8_t *buffer, int value){
     }
     return sizeof(int);
 }
-
-
-// Bozo tried to implement various float encoding but:
-// -the python library he picked does not support binary representation
-// http://www.strozhevsky.com/free_docs/asn1_in_simple_words.pdf
-// -this implementation will procude literal representation of a float 
-// (not fully tested) but it's a waste of space
-// we will simply send the 4 bytes and decode them on the other arduino
-int _addFloat_literalEncoding(uint8_t *buffer, float value){
-
-    double_cast d1;
-    d1.f = value;
-
-    uint8_t firstByte=0b0000011;
-    buffer[0]=firstByte;
-
-    int exponent=0;
-
-    int i=1;
-    if (value<0){
-        buffer[i++]=0x2D;
-        value=-value;
-    }
-
-    while (value-(int)value>0){
-        exponent-=1;
-        value*=10;
-    }
-
-    int v=value;
-    int e=exponent<0?-exponent:exponent;
-    while (v>0 && i<50)
-    {
-        buffer[e+i]=0x30+v%10;
-        e--;
-        v=v/10;
-    }
-    int ee=exponent<0?-exponent:exponent;
-    i+=ee;
-
-    buffer[i++]=0x45;
-    if (exponent<0)
-    {
-        buffer[i++]=0x2d;
-        exponent=-exponent;
-    }
-    buffer[i++]=0x30+exponent;
-
-
-    return i;
-}
-
-
-void Message::addFloatValue(DataType t, float value){
-    // Type
-    payload[payloadLen++]=extendedType; // extended type
-    payload[payloadLen++]=t;
-
-    payload[payloadLen++]=4;
-
-    unsigned long d = *(unsigned long *)&value;
-    payload[payloadLen++]=d & 0x00FF;
-    payload[payloadLen++]=(d & 0xFF00) >> 8;
-    payload[payloadLen++]=(d & 0xFF0000) >> 16;
-    payload[payloadLen++]=(d & 0xFF000000) >> 24;
-}
-
-void Message::addFloat( float value){
-    // Type
-    payload[payloadLen++]=floatType; 
-
-    double_cast d1;
-    d1.f = value;
-
-    // Len + Value
-    int length=_addFloat_literalEncoding(payload+(payloadLen+1), value);
-    payload[payloadLen]=length;
-    payloadLen+=1+length;
-
-    std::cout<<"payload final  is "<<payloadLen;
-
-}
-
 
 void Message::addIntValue(DataType t, int value){
     // Type
@@ -149,22 +78,35 @@ void Message::addInt(int value){
     payloadLen+=1+length;
 }
 
+
+
+void Message::addFloatValue(DataType t, float value){
+    // Type
+    payload[payloadLen++]=extendedType; // extended type
+    payload[payloadLen++]=t;
+
+    payload[payloadLen++]=4;
+
+    unsigned long d = *(unsigned long *)&value;
+    payload[payloadLen++]=d & 0x00FF;
+    payload[payloadLen++]=(d & 0xFF00) >> 8;
+    payload[payloadLen++]=(d & 0xFF0000) >> 16;
+    payload[payloadLen++]=(d & 0xFF000000) >> 24;
+}
+
+
 void Message::addTemperature(float temperature){
     addFloatValue(TEMPERATURE, temperature);
 }
 void Message::addTemperature(int temperature){
     addFloatValue(TEMPERATURE, (float)temperature);
 }
-
-
 void Message::addAcceleration(float acceleration){
     addFloatValue(ACCELERATION, acceleration);
 }
-
 void Message::addAcceleration(int acceleration){
     addFloatValue(ACCELERATION, (float)acceleration);
 }
-
 void Message::addAmount(float amount){
     addFloatValue(AMOUNT, amount);
 }

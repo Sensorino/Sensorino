@@ -20,11 +20,11 @@ public:
      * used if more than an instance is used
      * @param sleepPeriod
      */
-    Service(unsigned int serviceTypeID);
+    Service();
 
     /** Retrieves the service type ID
     */
-    unsigned int getServiceTypeID();
+    unsigned int getInstanceId();
 
     /** Virtual function used to initialize the service
      * @return shall return true if everything went OK
@@ -35,10 +35,12 @@ public:
      * @return shall return true if everything was OK
      */
     virtual boolean run()=0;
+    boolean isInteractive();
+    boolean setInteractive(bool interactive);
 
 private:
-    /** The service number */
-    unsigned int serviceTypeID;
+    uint8_t instanceId;
+    bool interactive;
 
 };
 

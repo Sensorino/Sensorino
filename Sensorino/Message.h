@@ -58,13 +58,15 @@ const uint8_t nullType=5;
 const uint8_t floatType=9;
 const uint8_t charStringType=29;
 
-
+#define HEADERS_LENGTH 8
+#define PAYLOAD_LENGTH 20
 
 
 class Message{
 
     public:
-        Message(uint8_t srcAddress[4], uint8_t dstAddress[4]);
+        Message(uint8_t srcAddress, uint8_t dstAddress);
+        Message(uint8_t srcAddress, uint8_t dstAddress, uint8_t id);
 
         void addFloatValue(DataType t, float value);
         void addIntValue(DataType t, int value);
@@ -129,22 +131,38 @@ class Message{
         void addVolume(int volume);
 
 
-
         uint8_t getId();
+        void setId(uint8_t id);
+
+        uint8_t getDstAddress();    
+        
+        inline uint8_t* getRawData();
+
         inline int getPayloadLength();
         inline uint8_t* getPayload();
+        inline void setPayload(uint8_t *data, uint8_t len);
+        
+
+        MessageType getType();
+        void setType(MessageType t);
+
+        void decode(uint8_t *data, uint8_t len, uint8_t id);
+
+        
+
             
 
     protected:
-    uint8_t payload[20];
+    uint8_t payload[PAYLOAD_LENGTH];
     uint8_t payloadLen;
 
-    uint8_t srcAddress[4];
-    uint8_t dstAddress[4];
+    uint8_t srcAddress;
+    uint8_t dstAddress;
     uint8_t id;
-    uint8_t static staticId;
 
-    uint8_t messageType;
+    //uint8_t static staticId;
+
+    MessageType messageType;
 };
 
 
