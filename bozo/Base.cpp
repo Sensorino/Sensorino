@@ -5,3 +5,9 @@ void Base::run(){
     listen(listenTimeout);
 }
 
+
+void onSerialMessage(){
+
+
+}
+

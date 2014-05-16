@@ -3,6 +3,72 @@
 #include <cstring>
 
 
+const char* Message::dataTypeToString(DataType type){
+    switch(type)
+    {
+
+        case ACCELERATION:
+            return "ACCELERATION";
+        case AMOUNT:
+            return "AMOUNT";
+        case ANGLE:
+            return "ANGLE";
+        case ANGULAR_VELOCITY:
+            return "ANGULAR_VELOCITY";
+        case AREA:
+            return "AREA";
+        case RADIOACTIVITY:
+            return "RADIOACTIVITY";
+        case ELECTRICAL_CAPACITANCE:
+            return "ELECTRICAL_CAPACITANCE";
+        case ELECTRICAL_RESISTANCE:
+            return "ELECTRICAL_RESISTANCE";
+        case ELECTRIC_CURRENT:
+            return "ELECTRIC_CURRENT";
+        case ENERGY:
+            return "ENERGY";
+        case FORCE:
+            return "FORCE";
+        case FREQUENCY:
+            return "FREQUENCY";
+        case ILLUMINANCE:
+            return "ILLUMINANCE";
+        case INDUCTANCE:
+            return "INDUCTANCE";
+        case LENGTH:
+            return "LENGTH";
+        case LUMINOUS_FLUX:
+            return "LUMINOUS_FLUX";
+        case LUMINOUS_INTENSITY:
+            return "LUMINOUS_INTENSITY";
+        case MAGNETIC_FIELD_STRENGTH:
+            return "MAGNETIC_FIELD_STRENGTH";
+        case MASS:
+            return "MASS";
+        case POWER:
+            return "POWER";
+        case PRESSURE:
+            return "PRESSURE";
+        case RELATIVE_HUMIDITY:
+            return "RELATIVE_HUMIDITY";
+        case SPEED:
+            return "SPEED";
+        case TEMPERATURE:
+            return "TEMPERATURE";
+        case TIME:
+            return "TIME";
+        case VOLTAGE:
+            return "VOLTAGE";
+        case VOLUME:
+            return "VOLUME";
+
+        default:
+            return "UNKNOWN";
+    }
+
+}
+
+
 
 
 Message::Message(uint8_t src, uint8_t dst)
@@ -257,5 +323,7 @@ void Message::addVolume(float volume){
 void Message::addVolume(int volume){
     addFloatValue(VOLUME, (float)volume);
 }
+
+
 
 
