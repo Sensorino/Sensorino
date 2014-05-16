@@ -71,9 +71,15 @@ class Message{
         void addFloatValue(DataType t, float value);
         void addIntValue(DataType t, int value);
 
+        const char *dataTypeToString(DataType t);
+        const char *msgTypeAsString();
+    
+
         // there should be no reason to do this, but I need to test
         void addFloat(float value);
         void addInt(int value);
+
+        
 
         void addAcceleration(float acceleration);
         void addAcceleration(int acceleration);
