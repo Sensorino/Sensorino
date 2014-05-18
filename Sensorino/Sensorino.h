@@ -14,7 +14,7 @@ struct RHReliableDatagram;
 class Sensorino
 {
     public:
-        Sensorino();
+        Sensorino(int noSM = 0);
 
         void onRadioMessage(uint8_t *rawData, int len);
         void setAddress(uint8_t address);
