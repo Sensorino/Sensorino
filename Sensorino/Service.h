@@ -8,40 +8,43 @@
 #ifndef SERVICE_H_INCLUDED
 #define SERVICE_H_INCLUDED
 
-#include <Sensorino_Protocol.h>
+#include "Message.h"
 
-class Service{
-
+class Service {
 public:
 
     /** Constructor of a generic Service.
-     * @param serviceTypeID the unique identifier of the service type
-     * @param serviceInstanceID a number that identifies the local instance of the service
-     * used if more than an instance is used
-     * @param sleepPeriod
+     * @param serviceID locally unique identifier of this service
      */
-    Service();
+    Service(int _id) : id(_id);
 
-    /** Retrieves the service type ID
-    */
-    unsigned int getInstanceId();
+    int getId(void) { return id; }
 
-    /** Virtual function used to initialize the service
-     * @return shall return true if everything went OK
+    void handleMessage(Message *message);
+
+protected:
+    uint8_t id;
+
+    /* Services need to implement some of the following two: */
+    virtual void onSet(Message *message) = 0;
+    virtual void onRequest(Message *message) = 0;
+
+    /* Service implementations use this to start a new PUBLISH message.
+     * When done constructing the contents, they'll call Message->send();
      */
-    virtual boolean init()=0;
+    Message *publish(Message *message = NULL);
 
-    /** Virtual function used to be run periodically or on a pin wakeup
-     * @return shall return true if everything was OK
+    /* Service implementations use this to start a new ERR message.
+     * When done constructing the contents, they'll call Message->send();
      */
-    virtual boolean run()=0;
-    boolean isInteractive();
-    boolean setInteractive(bool interactive);
+    Message *err(Message *message = NULL);
+
+    /* Start a new message addressed at the Base or at the sender of
+     * the original message. */
+    Message *startBaseMessage(MessageType type, Message *orig);
 
 private:
-    uint8_t instanceId;
-    bool interactive;
-
 };
 
 #endif // SERVICE_H_INCLUDED
+/* vim: set sw=4 ts=4 et: */
