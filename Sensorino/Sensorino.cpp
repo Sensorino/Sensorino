@@ -1,14 +1,12 @@
 #include "Sensorino.h"
 #include "Message.h"
 
-
 Sensorino::Sensorino(){
     // Singleton instance of the radio driver
     RH_NRF24 driver;
 
     // Class to manage message delivery and receipt, using the driver declared above
-    RHReliableDatagram m(driver, address);
-    manager=&m;
+    manager = new RHReliableDatagram(driver, address);
 }
 
 bool Sensorino::sendMessage(Message m){
