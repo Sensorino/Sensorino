@@ -8,6 +8,8 @@
 #ifndef SERVICE_H_INCLUDED
 #define SERVICE_H_INCLUDED
 
+#include <stdint.h>
+
 #include "Message.h"
 
 class Service {
@@ -16,7 +18,7 @@ public:
     /** Constructor of a generic Service.
      * @param serviceID locally unique identifier of this service
      */
-    Service(int _id) : id(_id);
+    Service(int _id);
 
     int getId(void) { return id; }
 

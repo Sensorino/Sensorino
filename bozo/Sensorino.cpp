@@ -1,5 +1,10 @@
+#include <RadioHead.h>
+#include <RH_NRF24.h>
+#include <RHReliableDatagram.h>
+
 #include "Sensorino.h"
 #include "Message.h"
+#include "Service.h"
 
 Sensorino::Sensorino(){
     // Singleton instance of the radio driver
@@ -7,10 +12,14 @@ Sensorino::Sensorino(){
 
     // Class to manage message delivery and receipt, using the driver declared above
     manager = new RHReliableDatagram(driver, address);
+
+    servicesNum = 0;
+
+    sensorino = this;
 }
 
 bool Sensorino::sendMessage(Message &m) {
-    return manager->sendtoWait(m.getRawData(), m.getRawLength(),
+    return manager->sendtoWait((uint8_t *) m.getRawData(), m.getRawLength(),
             m.getDstAddress());
 }
 
@@ -19,7 +28,7 @@ void Sensorino::onRadioMessage(uint8_t *rawData, int len) {
     int svcId;
     Service *targetSvc = NULL;
 
-    if (msg->find(SERVICE_ID, 0, &svcId))
+    if (msg.find(SERVICE_ID, 0, &svcId))
         targetSvc = getServiceById(svcId);
 
     if (!targetSvc) {
@@ -36,7 +45,7 @@ void Sensorino::setAddress(uint8_t address) {
     Sensorino::address = address;
 }
 
-uint8_t getAddress() {
+uint8_t Sensorino::getAddress() {
     return address;
 }
 
@@ -60,15 +69,15 @@ void Sensorino::deleteService(Service *s) {
     if (i >= servicesNum)
         die("deleteService: not found");
 
-    serviceNum--;
-    for (; i < serviceNum; i++)
-        service[i] = service[i + 1];
+    servicesNum--;
+    for (; i < servicesNum; i++)
+        services[i] = services[i + 1];
 }
 
 Service *Sensorino::getServiceById(int id) {
     for (int i = 0; i < servicesNum; i++)
-        if (service[i]->getId() == id)
-            return service[i];
+        if (services[i]->getId() == id)
+            return services[i];
 
     return NULL;
 }
@@ -95,7 +104,7 @@ void Sensorino::die(const char *err) {
 # error Only 328P supported for now
 #endif
 
-static void (*gpio_handler[NUM_DIGITAL_PINS])(void *data);
+static void (*gpio_handler[NUM_DIGITAL_PINS])(int pin, void *data);
 static void *gpio_data[NUM_DIGITAL_PINS];
 static uint8_t port_val[3];
 /* Could get rid of this at some cost... */
@@ -129,7 +138,7 @@ ISR(PCINT2_vect) {
 void Sensorino::attachGPIOInterrupt(int pin,
         void (*handler)(int pin, void *data), void *data) {
     if (pin >= NUM_DIGITAL_PINS)
-        die("Bad pin number")
+        die("Bad pin number");
 
     int pcint = (digitalPinToPCICRbit(pin) << 3) | digitalPinToPCMSKbit(pin);
 
