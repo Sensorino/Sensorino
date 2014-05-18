@@ -72,6 +72,8 @@ const char *Message::dataTypeToString(DataType type){
     }
 }
 
+uint8_t Message::staticId;
+
 Message::Message(uint8_t src, uint8_t dst) {
     staticId++;
     if (staticId >= MAX_MESSAGE_ID)

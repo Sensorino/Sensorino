@@ -1,4 +1,3 @@
-#include <RadioHead.h>
 #include <RH_NRF24.h>
 #include <RHReliableDatagram.h>
 
