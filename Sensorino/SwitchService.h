@@ -44,9 +44,9 @@ protected:
     }
 
     static void pinHandler(int pin, void *s) {
-        SwitchService *svc = s;
+        SwitchService *svc = (SwitchService *) s;
 
-        s->publishSwitch();
+        svc->publishSwitch();
     }
 };
 /* vim: set sw=4 ts=4 et: */
