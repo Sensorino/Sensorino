@@ -28,7 +28,7 @@ protected:
     uint8_t id;
 
     /* Services need to implement some of the following two: */
-    virtual void onSet(Message *message) = 0;
+    virtual void onSet(Message *message) { err(message)->send(); };
     virtual void onRequest(Message *message) = 0;
 
     /* Service implementations use this to start a new PUBLISH message.
