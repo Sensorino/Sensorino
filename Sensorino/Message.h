@@ -8,7 +8,7 @@
 
 enum MessageType {
         ERR     = 0,
-        CTRL    = 1,
+        GARBAGE = 1,
         PUBLISH = 2,
         SET     = 3,
         REQUEST = 4,

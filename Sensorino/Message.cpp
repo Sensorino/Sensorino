@@ -84,8 +84,12 @@ Message::Message(uint8_t src, uint8_t dst) {
 }
 
 Message::Message(uint8_t *raw, int len) {
-    if (len > HEADERS_LENGTH + PAYLOAD_LENGTH)
-        Sensorino::die("Message too big");
+    if (len > HEADERS_LENGTH + PAYLOAD_LENGTH || len < HEADERS_LENGTH) {
+        /* Can't Sensorino::die here because this may be a network error */
+        rawLen = HEADERS_LENGTH;
+        setType(GARBAGE);
+        return;
+    }
 
     memcpy(Message::raw, raw, len);
     rawLen = len;
