@@ -20,7 +20,7 @@ enum MessageType {
 enum DataType {
     /* Metatypes */
     DATATYPE                = 0,
-    SERVICE_ID              = 1,
+    SERVICE_ID,
 
     /* ISO-defined physical dimensions */
     ACCELERATION            = 21,
@@ -52,9 +52,11 @@ enum DataType {
     VOLUME                  = 47,
 
     /* Other */
-    COUNT                   = 48,
-    PRESENCE                = 49,
-    SWITCH                  = 50,
+    COUNT                   = 50,
+    PRESENCE,
+    SWITCH,
+
+    __NUM_DATA_TYPES,
 };
 
 
@@ -68,23 +70,47 @@ const uint8_t nullType=5;
 const uint8_t floatType=9;
 const uint8_t charStringType=29;
 
-#define HEADERS_LENGTH 8
+#define HEADERS_LENGTH 4
 #define PAYLOAD_LENGTH 20
-
 
 class Message{
 
     public:
+        /* Use this when building a brand new message */
         Message(uint8_t srcAddress, uint8_t dstAddress);
-        Message(uint8_t srcAddress, uint8_t dstAddress, uint8_t id);
+
+        /* Use this to grok a message you received */
+        Message(const uint8_t *raw, int len);
+
+        static const char *dataTypeToString(DataType t);
+
+        /* Header accessors */
+        uint8_t getId();
+        void setId(uint8_t id);
+
+        uint8_t getSrcAddress();
+        void setSrcAddress(uint8_t addr);
+        uint8_t getDstAddress();
+        void setDstAddress(uint8_t addr);
+
+        MessageType getType(void);
+        void setType(MessageType t);
+
+        /* Raw accessors */
+        const uint8_t *getRawData(void);
+        int getRawLength(void);
+
+        /* Payload accessors */
+
+        /* Find @num'th TLV of type @t, decode it and store in @value,
+         * @return non-zero on success.
+         */
+        int find(DataType t, int num, void *value);
 
         void addFloatValue(DataType t, float value);
         void addIntValue(DataType t, int value);
         void addDataTypeValue(DataType t);
-        void addBoolValue(DataType t);
-
-        static const char *dataTypeToString(DataType t);
-        const char *msgTypeAsString();
+        void addBoolValue(DataType t, int value);
 
         // there should be no reason to do this, but I need to test
         void addFloat(float value);
@@ -145,41 +171,12 @@ class Message{
         void addVolume(float volume);
         void addVolume(int volume);
 
-        uint8_t getId();
-        void setId(uint8_t id);
-
-        uint8_t getDstAddress();
-
-        uint8_t *getRawData();
-        int getRawLength();
-
-        inline int getPayloadLength();
-        inline uint8_t *getPayload();
-        inline void setPayload(uint8_t *data, uint8_t len);
-
-        MessageType getType();
-        void setType(MessageType t);
-
     protected:
-        uint8_t payload[PAYLOAD_LENGTH];
-        uint8_t payloadLen;
+        uint8_t raw[HEADERS_LENGTH + PAYLOAD_LENGTH];
+        uint8_t rawLen;
 
-        uint8_t srcAddress;
-        uint8_t dstAddress;
-        uint8_t id;
-
-        uint8_t static staticId;
-
-        MessageType messageType;
-        int dstService;
+        static uint8_t staticId;
 };
 
-int Message::getPayloadLength(){
-    return payloadLen;
-}
-
-uint8_t* Message::getPayload(){
-    return payload;
-}
-
 #endif // whole file
+/* vim: set sw=4 ts=4 et: */

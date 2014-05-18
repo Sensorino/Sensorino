@@ -1,12 +1,8 @@
 #include <Message.h>
-#include <iostream>
-#include <cstring>
 
-
-const char* Message::dataTypeToString(DataType type){
+const char *Message::dataTypeToString(DataType type){
     switch(type)
     {
-
         case ACCELERATION:
             return "ACCELERATION";
         case AMOUNT:
@@ -65,55 +61,119 @@ const char* Message::dataTypeToString(DataType type){
         default:
             return "UNKNOWN";
     }
-
 }
 
+Message::Message(uint8_t src, uint8_t dst) {
+    staticId++;
+    if (staticId >= MAX_MESSAGE_ID)
+        staticId -= MAX_MESSAGE_ID;
+    setId(staticId);
 
+    setSrcAddress(src);
+    setDstAddress(dst);
 
+    rawLen = HEADERS_LENGTH;
+}
 
-Message::Message(uint8_t src, uint8_t dst)
-{
-    static uint8_t staticId=0;
-    staticId=(staticId+1) % MAX_MESSAGE_ID;
-    id=staticId;
+Message::Message(uint8_t *raw, int len) {
+    if (len > HEADERS_LENGTH + PAYLOAD_LENGTH)
+        Sensorino::die("Message too big");
 
-    payloadLen=0;
-
-    srcAddress=src;
-    dstAddress=dst;
-
+    memcpy(Message::raw, raw, len);
+    rawLen = len;
 }
 
 uint8_t Message::getId(){
-    return id;
+    return raw[3];
 }
 
 void Message::setId(uint8_t i){
-    id=i;
+    raw[3] = i;
+}
+
+uint8_t Message::getSrcAddress() {
+    return raw[0];
+}
+
+void Message::setSrcAddress(uint8_t addr) {
+    raw[0] = addr;
+}
+
+uint8_t Message::getDstAddress() {
+    return raw[1];
+}
+
+void Message::setDstAddress(uint8_t addr) {
+    raw[1] = addr;
+}
+
+MessageType Message::getType(void){
+    return raw[2];
 }
 
 void Message::setType(MessageType t){
-    messageType=t;
+    raw[2] = t;
 }
 
-
-
-void Message::decode(uint8_t *data, uint8_t len, uint8_t id){
-    setType((MessageType)data[0]);
-    setId(id);
-    setPayload(&data[HEADERS_LENGTH], len - HEADERS_LENGTH);
+const uint8_t *Message::getRawData(void) {
+    return raw;
 }
 
-void Message::setPayload(uint8_t *data, uint8_t len){
-    if (len>PAYLOAD_LENGTH){
-        // too long, fuck you ?
-        len=PAYLOAD_LENGTH;
+int Message::getRawLength(void) {
+    return rawLen;
+}
+
+#define BOOL_TYPE(t) (t == PRESENCE || t == SWITCH)
+#define INT_TYPE(t) (t == DATATYPE || t == COUNT || t == SERVICE_ID)
+#define FLOAT_TYPE(t) (t >= ACCELERATION && T < COUNT)
+
+int Message::find(DataType t, int num, void *value) {
+    int pos = HEADERS_LENGTH, len;
+
+    while (pos < rawLen - 3) {
+        if (raw[pos++] != extendedType || raw[pos++] != (int) t || num--) {
+            /* Skip this TLV */
+            len = raw[pos++]
+            pos += len;
+            continue;
+        }
+
+        len = raw[pos++];
+#define CHECK_LENGTH(n) (pos + n > HEADERS_LENGTH + PAYLOAD_LENGTH || \
+        len < n)
+
+        /* Is this type serialised as a boolean, int or float? */
+        if (BOOL_TYPE(t)) {
+            int bool_val;
+
+            if (CHECK_LENGTH(1))
+                return 0;
+
+            bool_val = raw[pos++] != 0;
+            *(int *) value = bool_val;
+        } else if (FLOAT_TYPE(t)) {
+            if (CHECK_LENGTH(4))
+                return 0;
+
+            /* Avoid alignment traps, TODO: endianness */
+            memcpy(value, raw + pos, 4);
+            pos += 4;
+        } else if (INT_TYPE(t)) {
+            uint16_t int_val;
+
+            if (CHECK_LENGTH(2))
+                return 0;
+
+            int_val = raw[pos++] << 8;
+            int_val |= raw[pos++];
+            *(int *) value = (int16_t) int_val;
+        }
+
+        return 1;
     }
-    memcpy(payload, data, len);
-    payloadLen=len; 
+
+    return 0;
 }
-
-
 
 int _addInt(uint8_t *buffer, int value){
     // Value
@@ -137,14 +197,12 @@ void Message::addIntValue(DataType t, int value){
 
 void Message::addInt(int value){
     // Type
-    payload[payloadLen++]=intType; 
+    payload[payloadLen++]=intType;
     // Len + Value
     int length=_addInt(payload+payloadLen+1, value);
     payload[payloadLen]=length;
     payloadLen+=1+length;
 }
-
-
 
 void Message::addFloatValue(DataType t, float value){
     // Type
@@ -160,6 +218,19 @@ void Message::addFloatValue(DataType t, float value){
     payload[payloadLen++]=(d & 0xFF000000) >> 24;
 }
 
+void addDataTypeValue(DataType t){
+    addIntValue(DATATYPE, t);
+}
+
+void addBoolValue(DataType t, int value){
+    // Type
+    payload[payloadLen++]=extendedType; // extended type
+    payload[payloadLen++]=t;
+
+    // Len + Value
+    payload[payloadLen++]=1;
+    payload[payloadLen++]=!!value;
+}
 
 void Message::addTemperature(float temperature){
     addFloatValue(TEMPERATURE, temperature);
@@ -323,7 +394,4 @@ void Message::addVolume(float volume){
 void Message::addVolume(int volume){
     addFloatValue(VOLUME, (float)volume);
 }
-
-
-
-
+/* vim: set sw=4 ts=4 et: */
