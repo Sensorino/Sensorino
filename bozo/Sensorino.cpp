@@ -4,8 +4,9 @@
 #include "Sensorino.h"
 #include "Message.h"
 #include "Service.h"
+#include "ServiceManagerService.h"
 
-Sensorino::Sensorino(){
+Sensorino::Sensorino(int noSM) {
     // Singleton instance of the radio driver
     RH_NRF24 driver;
 
@@ -15,6 +16,10 @@ Sensorino::Sensorino(){
     servicesNum = 0;
 
     sensorino = this;
+
+    /* Create a Service Manager unless we were told not to */
+    if (!noSM)
+        new ServiceManagerService();
 }
 
 bool Sensorino::sendMessage(Message &m) {
