@@ -73,6 +73,9 @@ class Message{
 
         static const char *dataTypeToString(DataType t);
 
+        /* NOTE: this blocks */
+        bool send(void);
+
         /* Header accessors */
         uint8_t getId();
         void setId(uint8_t id);
