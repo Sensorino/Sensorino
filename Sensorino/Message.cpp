@@ -91,6 +91,16 @@ Message::Message(uint8_t *raw, int len) {
     rawLen = len;
 }
 
+bool Message::send(void) {
+    bool ret = sensorino->sendMessage(*this);
+
+    /* This is a bit of a hack, we can probably do this in a callback set
+     * by whoever allocated this message (e.g. Service::startBaseMessage) */
+    delete this;
+
+    return ret;
+}
+
 uint8_t Message::getId(){
     return raw[3];
 }
