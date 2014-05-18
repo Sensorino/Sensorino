@@ -18,33 +18,43 @@ enum MessageType {
 };
 
 enum DataType {
-    ACCELERATION            = 1,
-    AMOUNT                  = 2,
-    ANGLE                   = 3,
-    ANGULAR_VELOCITY        = 4,
-    AREA                    = 5,
-    RADIOACTIVITY           = 6,
-    ELECTRICAL_CAPACITANCE  = 7,
-    ELECTRICAL_RESISTANCE   = 8,
-    ELECTRIC_CURRENT        = 9,
-    ENERGY                  = 10,
-    FORCE                   = 11,
-    FREQUENCY               = 12,
-    ILLUMINANCE             = 13,
-    INDUCTANCE              = 14,
-    LENGTH                  = 15,
-    LUMINOUS_FLUX           = 16,
-    LUMINOUS_INTENSITY      = 17,
-    MAGNETIC_FIELD_STRENGTH = 18,
-    MASS                    = 19,
-    POWER                   = 20,
-    PRESSURE                = 21,
-    RELATIVE_HUMIDITY       = 22,
-    SPEED                   = 23,
-    TEMPERATURE             = 24,
-    TIME                    = 25,
-    VOLTAGE                 = 26,
-    VOLUME                  = 27,
+    /* Metatypes */
+    DATATYPE                = 0,
+    SERVICE_ID              = 1,
+
+    /* ISO-defined physical dimensions */
+    ACCELERATION            = 21,
+    AMOUNT                  = 22,
+    ANGLE                   = 23,
+    ANGULAR_VELOCITY        = 24,
+    AREA                    = 25,
+    RADIOACTIVITY           = 26,
+    ELECTRICAL_CAPACITANCE  = 27,
+    ELECTRICAL_RESISTANCE   = 28,
+    ELECTRIC_CURRENT        = 29,
+    ENERGY                  = 30,
+    FORCE                   = 31,
+    FREQUENCY               = 32,
+    ILLUMINANCE             = 33,
+    INDUCTANCE              = 34,
+    LENGTH                  = 35,
+    LUMINOUS_FLUX           = 36,
+    LUMINOUS_INTENSITY      = 37,
+    MAGNETIC_FIELD_STRENGTH = 38,
+    MASS                    = 39,
+    POWER                   = 40,
+    PRESSURE                = 41,
+    RELATIVE_HUMIDITY       = 42,
+    SPEED                   = 43,
+    TEMPERATURE             = 44,
+    TIME                    = 45,
+    VOLTAGE                 = 46,
+    VOLUME                  = 47,
+
+    /* Other */
+    COUNT                   = 48,
+    PRESENCE                = 49,
+    SWITCH                  = 50,
 };
 
 
@@ -70,8 +80,10 @@ class Message{
 
         void addFloatValue(DataType t, float value);
         void addIntValue(DataType t, int value);
+        void addDataTypeValue(DataType t);
+        void addBoolValue(DataType t);
 
-        const char *dataTypeToString(DataType t);
+        static const char *dataTypeToString(DataType t);
         const char *msgTypeAsString();
     
 
