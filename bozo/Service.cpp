@@ -53,6 +53,7 @@ Message *Service::startBaseMessage(MessageType type, Message *orig) {
 
     msg = new Message(src, dst);
     msg->setType(type);
+    msg->addIntValue(SERVICE_ID, id);
     return msg;
 }
 /* vim: set sw=4 ts=4 et: */
