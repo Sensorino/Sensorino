@@ -1,4 +1,5 @@
-#include <Message.h>
+#include "Message.h"
+#include "Sensorino.h"
 
 // https://en.wikipedia.org/wiki/Basic_Encoding_Rules#BER_encoding
 const uint8_t extendedType=0b00011111;
@@ -83,7 +84,7 @@ Message::Message(uint8_t src, uint8_t dst) {
     rawLen = HEADERS_LENGTH;
 }
 
-Message::Message(uint8_t *raw, int len) {
+Message::Message(const uint8_t *raw, int len) {
     if (len > HEADERS_LENGTH + PAYLOAD_LENGTH || len < HEADERS_LENGTH) {
         /* Can't Sensorino::die here because this may be a network error */
         rawLen = HEADERS_LENGTH;
@@ -91,8 +92,9 @@ Message::Message(uint8_t *raw, int len) {
         return;
     }
 
-    memcpy(Message::raw, raw, len);
     rawLen = len;
+    for (len = 0; len < rawLen; len++)
+        Message::raw[len] = raw[len];
 }
 
 bool Message::send(void) {
@@ -130,7 +132,7 @@ void Message::setDstAddress(uint8_t addr) {
 }
 
 MessageType Message::getType(void){
-    return raw[2];
+    return (MessageType) raw[2];
 }
 
 void Message::setType(MessageType t){
@@ -155,7 +157,7 @@ int Message::find(DataType t, int num, void *value) {
     while (pos < rawLen - 3) {
         if (raw[pos++] != extendedType || raw[pos++] != (int) t || num--) {
             /* Skip this TLV */
-            len = raw[pos++]
+            len = raw[pos++];
             pos += len;
             continue;
         }
@@ -174,11 +176,16 @@ int Message::find(DataType t, int num, void *value) {
             bool_val = raw[pos] != 0;
             *(int *) value = bool_val;
         } else if (FLOAT_TYPE(t)) {
+            uint32_t float_val;
+
             if (CHECK_LENGTH(4))
                 return 0;
 
-            /* Avoid alignment traps, TODO: endianness */
-            memcpy(value, raw + pos, 4);
+            float_val = raw[pos++];
+            float_val |= raw[pos++] << 8;
+            float_val |= raw[pos++] << 16;
+            float_val |= raw[pos++] << 24;
+            *(uint32_t *) value = float_val;
         } else if (INT_TYPE(t)) {
             uint16_t int_val;
 
@@ -206,51 +213,51 @@ int _addInt(uint8_t *buffer, int value){
 
 void Message::addIntValue(DataType t, int value){
     // Type
-    payload[payloadLen++]=extendedType; // extended type
-    payload[payloadLen++]=t;
+    raw[rawLen++]=extendedType; // extended type
+    raw[rawLen++]=t;
 
     // Len + Value
-    int length=_addInt(payload+payloadLen+1, value);
-    payload[payloadLen]=length;
-    payloadLen+=1+length;
+    int length=_addInt(raw+rawLen+1, value);
+    raw[rawLen]=length;
+    rawLen+=1+length;
 
 }
 
 void Message::addInt(int value){
     // Type
-    payload[payloadLen++]=intType;
+    raw[rawLen++]=intType;
     // Len + Value
-    int length=_addInt(payload+payloadLen+1, value);
-    payload[payloadLen]=length;
-    payloadLen+=1+length;
+    int length=_addInt(raw+rawLen+1, value);
+    raw[rawLen]=length;
+    rawLen+=1+length;
 }
 
 void Message::addFloatValue(DataType t, float value){
     // Type
-    payload[payloadLen++]=extendedType; // extended type
-    payload[payloadLen++]=t;
+    raw[rawLen++]=extendedType; // extended type
+    raw[rawLen++]=t;
 
-    payload[payloadLen++]=4;
+    raw[rawLen++]=4;
 
     unsigned long d = *(unsigned long *)&value;
-    payload[payloadLen++]=d & 0x00FF;
-    payload[payloadLen++]=(d & 0xFF00) >> 8;
-    payload[payloadLen++]=(d & 0xFF0000) >> 16;
-    payload[payloadLen++]=(d & 0xFF000000) >> 24;
+    raw[rawLen++]=d & 0x00FF;
+    raw[rawLen++]=(d & 0xFF00) >> 8;
+    raw[rawLen++]=(d & 0xFF0000) >> 16;
+    raw[rawLen++]=(d & 0xFF000000) >> 24;
 }
 
-void addDataTypeValue(DataType t){
+void Message::addDataTypeValue(DataType t){
     addIntValue(DATATYPE, t);
 }
 
-void addBoolValue(DataType t, int value){
+void Message::addBoolValue(DataType t, int value){
     // Type
-    payload[payloadLen++]=extendedType; // extended type
-    payload[payloadLen++]=t;
+    raw[rawLen++]=extendedType; // extended type
+    raw[rawLen++]=t;
 
     // Len + Value
-    payload[payloadLen++]=1;
-    payload[payloadLen++]=!!value;
+    raw[rawLen++]=1;
+    raw[rawLen++]=!!value;
 }
 
 void Message::addTemperature(float temperature){

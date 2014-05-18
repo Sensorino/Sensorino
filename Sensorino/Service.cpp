@@ -1,7 +1,7 @@
 #include "Sensorino.h"
 #include "Service.h"
 
-Service::Service(int _id) {
+Service::Service(int _id) : id(_id) {
     sensorino->addService(this);
 }
 
@@ -23,18 +23,18 @@ void Service::handleMessage(Message *message) {
     }
 }
 
-Message *Service::*publish(Message *message) {
+Message *Service::publish(Message *message) {
     /* NOTE: we may want to reference the original message Id in the
      * response somehow.
      */
-    return startBaseMesssage(PUBLISH, message);
+    return startBaseMessage(PUBLISH, message);
 }
 
-Message *Service::*err(Message *message) {
+Message *Service::err(Message *message) {
     /* NOTE: we may want to reference the original message Id in the
      * response somehow.
      */
-    return startBaseMesssage(ERR, message);
+    return startBaseMessage(ERR, message);
 }
 
 Message *Service::startBaseMessage(MessageType type, Message *orig) {
