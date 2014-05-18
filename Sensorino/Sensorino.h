@@ -16,13 +16,15 @@ class Sensorino
         uint8_t getAddress();
         uint8_t getBaseAddress() { return 0 };
 
-        bool sendMessage(Message m);
+        bool sendMessage(Message &m);
 
         void addService(Service *s);
         void deleteService(Service *s);
 
 	Service *getServiceById(int id);
 	Service *getServiceByNum(int num);
+
+	static void die(const char *err = NULL) __attribute__((noreturn));
 
     private:
         uint8_t address;
