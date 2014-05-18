@@ -38,3 +38,9 @@ bool Sensorino::sendMessage(Message m){
 
 
 }
+
+/* Potnetially-temporary global single sensorino instance.  We can pass this
+ * pointer around when calling service constructors later, for the moment
+ * let's use a global...
+ */
+Sensorino *sensorino;
