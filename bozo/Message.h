@@ -85,13 +85,10 @@ class Message{
 
         static const char *dataTypeToString(DataType t);
         const char *msgTypeAsString();
-    
 
         // there should be no reason to do this, but I need to test
         void addFloat(float value);
         void addInt(int value);
-
-        
 
         void addAcceleration(float acceleration);
         void addAcceleration(int acceleration);
@@ -148,41 +145,34 @@ class Message{
         void addVolume(float volume);
         void addVolume(int volume);
 
-
         uint8_t getId();
         void setId(uint8_t id);
 
-        uint8_t getDstAddress();    
-        
-        inline uint8_t* getRawData();
+        uint8_t getDstAddress();
+
+        uint8_t *getRawData();
+        int getRawLength();
 
         inline int getPayloadLength();
-        inline uint8_t* getPayload();
+        inline uint8_t *getPayload();
         inline void setPayload(uint8_t *data, uint8_t len);
-        
 
         MessageType getType();
         void setType(MessageType t);
 
-        void decode(uint8_t *data, uint8_t len, uint8_t id);
-
-        
-
-            
-
     protected:
-    uint8_t payload[PAYLOAD_LENGTH];
-    uint8_t payloadLen;
+        uint8_t payload[PAYLOAD_LENGTH];
+        uint8_t payloadLen;
 
-    uint8_t srcAddress;
-    uint8_t dstAddress;
-    uint8_t id;
+        uint8_t srcAddress;
+        uint8_t dstAddress;
+        uint8_t id;
 
-    //uint8_t static staticId;
+        uint8_t static staticId;
 
-    MessageType messageType;
+        MessageType messageType;
+        int dstService;
 };
-
 
 int Message::getPayloadLength(){
     return payloadLen;
@@ -191,6 +181,5 @@ int Message::getPayloadLength(){
 uint8_t* Message::getPayload(){
     return payload;
 }
-
 
 #endif // whole file
