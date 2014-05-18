@@ -26,9 +26,9 @@ protected:
     void onRequest(Message *message) {
         DataType req;
 
-        if (!message->find(DATETYPE, 0, &req) || req == SWITCH) {
+        if (!message->find(DATATYPE, 0, &req) || req == SWITCH) {
             Message *msg = publish(message);
-            msg->addIntValue(SWITCH, state);
+            msg->addBoolValue(SWITCH, state);
             msg->send();
             return;
         }
