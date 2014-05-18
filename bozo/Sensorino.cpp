@@ -90,6 +90,60 @@ void Sensorino::die(const char *err) {
     while (1);
 }
 
+/* Globals.. can be moved to Sensorino as statics */
+#ifndef __AVR_ATmega328P__
+# error Only 328P supported for now
+#endif
+
+static void (*gpio_handler[NUM_DIGITAL_PINS])(void *data);
+static void *gpio_data[NUM_DIGITAL_PINS];
+static uint8_t port_val[3];
+/* Could get rid of this at some cost... */
+static uint8_t pcint_to_gpio[24] = {
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+};
+
+static void SensorinoGPIOISR(int port, uint8_t new_val) {
+    uint8_t diff = port_val[port] ^ new_val;
+    port_val[port] = new_val;
+
+    for (uint8_t *gpio = &pcint_to_gpio[port << 3]; diff; diff >>= 1, gpio++)
+        if ((diff & 1) && ~*gpio)
+            gpio_handler[*gpio](*gpio, gpio_data[*gpio]);
+}
+
+ISR(PCINT0_vect) {
+    SensorinoGPIOISR(0, PINB);
+}
+
+ISR(PCINT1_vect) {
+    SensorinoGPIOISR(1, PINC);
+}
+
+ISR(PCINT2_vect) {
+    SensorinoGPIOISR(2, PIND);
+}
+
+void Sensorino::attachGPIOInterrupt(int pin,
+        void (*handler)(int pin, void *data), void *data) {
+    if (pin >= NUM_DIGITAL_PINS)
+        die("Bad pin number")
+
+    int pcint = (digitalPinToPCICRbit(pin) << 3) | digitalPinToPCMSKbit(pin);
+
+    gpio_handler[pin] = handler;
+    gpio_data[pin] = data;
+    pcint_to_gpio[pcint] = pin;
+
+    /* Enable corresponding interrupt */
+    port_val[digitalPinToPCICRbit(pin)] =
+        *portInputRegister(digitalPinToPort(pin));
+    *digitalPinToPCMSK(pin) |= 1 << digitalPinToPCMSKbit(pin);
+    *digitalPinToPCICR(pin) |= 1 << digitalPinToPCICRbit(pin);
+}
+
 /* Potnetially-temporary global single sensorino instance.  We can pass this
  * pointer around when calling service constructors later, for the moment
  * let's use a global...
