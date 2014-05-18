@@ -147,7 +147,7 @@ int Message::getRawLength(void) {
 
 #define BOOL_TYPE(t) (t == PRESENCE || t == SWITCH)
 #define INT_TYPE(t) (t == DATATYPE || t == COUNT || t == SERVICE_ID)
-#define FLOAT_TYPE(t) (t >= ACCELERATION && T < COUNT)
+#define FLOAT_TYPE(t) (t >= ACCELERATION && t < COUNT)
 
 int Message::find(DataType t, int num, void *value) {
     int pos = HEADERS_LENGTH, len;
@@ -171,7 +171,7 @@ int Message::find(DataType t, int num, void *value) {
             if (CHECK_LENGTH(1))
                 return 0;
 
-            bool_val = raw[pos++] != 0;
+            bool_val = raw[pos] != 0;
             *(int *) value = bool_val;
         } else if (FLOAT_TYPE(t)) {
             if (CHECK_LENGTH(4))
@@ -179,7 +179,6 @@ int Message::find(DataType t, int num, void *value) {
 
             /* Avoid alignment traps, TODO: endianness */
             memcpy(value, raw + pos, 4);
-            pos += 4;
         } else if (INT_TYPE(t)) {
             uint16_t int_val;
 
@@ -187,7 +186,7 @@ int Message::find(DataType t, int num, void *value) {
                 return 0;
 
             int_val = raw[pos++] << 8;
-            int_val |= raw[pos++];
+            int_val |= raw[pos];
             *(int *) value = (int16_t) int_val;
         }
 
