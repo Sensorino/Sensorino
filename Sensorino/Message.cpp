@@ -1,5 +1,13 @@
 #include <Message.h>
 
+// https://en.wikipedia.org/wiki/Basic_Encoding_Rules#BER_encoding
+const uint8_t extendedType=0b00011111;
+const uint8_t booleanType=1;
+const uint8_t intType=2;
+const uint8_t nullType=5;
+const uint8_t floatType=9;
+const uint8_t charStringType=29;
+
 const char *Message::dataTypeToString(DataType type){
     switch(type)
     {
