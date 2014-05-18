@@ -6,7 +6,7 @@ Service::Service(int _id) {
 }
 
 void Service::handleMessage(Message *message) {
-    switch (message->getMessageType()) {
+    switch (message->getType()) {
     case SET:
         return onSet(message);
 
@@ -46,10 +46,13 @@ Message *Service::startBaseMessage(MessageType type, Message *orig) {
      */
     uint8_t src = sensorino->getAddress();
     uint8_t dst = sensorino->getBaseAddress();
+    Message *msg;
 
     if (orig)
         dst = orig->getDstAddress();
 
-    return new Message(src, dst);
+    msg = new Message(src, dst);
+    msg->setType(type);
+    return msg;
 }
 /* vim: set sw=4 ts=4 et: */
