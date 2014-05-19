@@ -27,7 +27,7 @@ bool Sensorino::sendMessage(Message &m) {
             m.getDstAddress());
 }
 
-void Sensorino::onRadioMessage(uint8_t *rawData, int len) {
+void Sensorino::onRadioMessage(const uint8_t *rawData, int len) {
     Message msg(rawData, len);
     int svcId;
     Service *targetSvc = NULL;

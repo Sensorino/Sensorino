@@ -16,7 +16,7 @@ class Sensorino
     public:
         Sensorino(int noSM = 0);
 
-        void onRadioMessage(uint8_t *rawData, int len);
+        void onRadioMessage(const uint8_t *rawData, int len);
         void setAddress(uint8_t address);
         uint8_t getAddress();
         uint8_t getBaseAddress() { return 0; };
