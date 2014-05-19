@@ -7,11 +7,8 @@
 #include "ServiceManagerService.h"
 
 Sensorino::Sensorino(int noSM) {
-    // Singleton instance of the radio driver
-    RH_NRF24 driver;
-
     // Class to manage message delivery and receipt, using the driver declared above
-    manager = new RHReliableDatagram(driver, address);
+    manager = new RHReliableDatagram(*new RH_NRF24(), address);
 
     servicesNum = 0;
 
