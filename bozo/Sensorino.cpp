@@ -7,8 +7,14 @@
 #include "ServiceManagerService.h"
 
 Sensorino::Sensorino(int noSM) {
+    /* TODO: make the constructor accept a Config object, which will
+     * provide default config, including default address and some service
+     * creation, based on whatever is saved in EEPROM (EEPROMConfig is a
+     * subclass of Config).
+     */
     // Class to manage message delivery and receipt, using the driver declared above
-    manager = new RHReliableDatagram(*new RH_NRF24(), address);
+    RHGenericDriver *radio = new RH_NRF24();
+    radioManager = new RHReliableDatagram(*radio, address);
 
     servicesNum = 0;
 
@@ -20,11 +26,11 @@ Sensorino::Sensorino(int noSM) {
 }
 
 bool Sensorino::sendMessage(Message &m) {
-    return manager->sendtoWait((uint8_t *) m.getRawData(), m.getRawLength(),
-            m.getDstAddress());
+    return radioManager->sendtoWait((uint8_t *) m.getRawData(),
+            m.getRawLength(), m.getDstAddress());
 }
 
-void Sensorino::onRadioMessage(const uint8_t *rawData, int len) {
+void Sensorino::handleMessage(const uint8_t *rawData, int len) {
     Message msg(rawData, len);
     int svcId;
     Service *targetSvc = NULL;
@@ -44,6 +50,8 @@ void Sensorino::onRadioMessage(const uint8_t *rawData, int len) {
 
 void Sensorino::setAddress(uint8_t address) {
     Sensorino::address = address;
+
+    radioManager->setThisAddress(address);
 }
 
 uint8_t Sensorino::getAddress() {

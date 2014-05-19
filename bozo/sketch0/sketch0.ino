@@ -27,5 +27,5 @@ void loop() {
   const uint8_t *raw = m.getRawData();
   int len = m.getRawLength();
 
-  s.onRadioMessage(raw, len);
+  s.handleMessage(raw, len);
 }

@@ -16,7 +16,7 @@ class Sensorino
     public:
         Sensorino(int noSM = 0);
 
-        void onRadioMessage(const uint8_t *rawData, int len);
+        void handleMessage(const uint8_t *rawData, int len);
         void setAddress(uint8_t address);
         uint8_t getAddress();
         uint8_t getBaseAddress() { return 0; };
@@ -46,9 +46,10 @@ class Sensorino
         Service *services[MAX_SERVICES];
         uint8_t servicesNum;
 
-        RHReliableDatagram *manager;
+        RHReliableDatagram *radioManager;
 };
 
 extern Sensorino *sensorino;
 
 #endif // whole file
+/* vim: set sw=4 ts=4 et: */
