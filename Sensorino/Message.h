@@ -61,6 +61,8 @@ enum DataType {
 
 #define HEADERS_LENGTH 4
 #define PAYLOAD_LENGTH 20
+#define MAX_RAW_LENGTH 24
+
 
 class Message{
 
@@ -168,6 +170,8 @@ class Message{
         uint8_t rawLen;
 
         static uint8_t staticId;
+
+        void checkIntegrity();
 };
 
 #endif // whole file
