@@ -47,6 +47,11 @@ class Sensorino
         uint8_t servicesNum;
 
         RHReliableDatagram *radioManager;
+
+        void radioOpDone(void);
+        void radioCheckPacket(void);
+        static void radioInterrupt(int pin, void *s);
+        static volatile bool radioBusy;
 };
 
 extern Sensorino *sensorino;
