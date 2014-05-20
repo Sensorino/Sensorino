@@ -6,14 +6,23 @@
 #include "Service.h"
 #include "ServiceManagerService.h"
 
+/* TODO: make these configurable */
+#define CONFIG_CSN_PIN  14
+#define CONFIG_CE_PIN   15
+#define CONFIG_INTR_PIN 10
+
 Sensorino::Sensorino(int noSM) {
+    if (sensorino)
+        Sensorino::die("For now only one allowed");
+
     /* TODO: make the constructor accept a Config object, which will
      * provide default config, including default address and some service
      * creation, based on whatever is saved in EEPROM (EEPROMConfig is a
      * subclass of Config).
      */
+
+    RHGenericDriver *radio = new RH_NRF24(CONFIG_CE_PIN, CONFIG_CSN_PIN);
     // Class to manage message delivery and receipt, using the driver declared above
-    RHGenericDriver *radio = new RH_NRF24();
     radioManager = new RHReliableDatagram(*radio, address);
 
     servicesNum = 0;
@@ -23,11 +32,74 @@ Sensorino::Sensorino(int noSM) {
     /* Create a Service Manager unless we were told not to */
     if (!noSM)
         new ServiceManagerService();
+
+    /* Ready to go */
+    pinMode(CONFIG_INTR_PIN, INPUT);
+    attachGPIOInterrupt(CONFIG_INTR_PIN, radioInterrupt, NULL);
 }
 
+/* Any time we interact with the NRF24L01+, once the radio becomes idle,
+ * this function must be called.  This means that we need to either use the
+ * blocking variants of functions (sendtoWait instead of sendto) or
+ * set up the interrupt handler to detect the end of the operation
+ * condition.
+ * The NRF24L01+ must be idle (e.g. not transmitting an ACK or anything)
+ * when this is called, so that we can go back to RX mode.
+ */
+void Sensorino::radioOpDone(void) {
+    /* A call to either .available() or any .recv* function switches
+     * the radio back to Rx mode if not already enabled.  But, any
+     * of these functions will also download a new packet from the
+     * radio if available, seems there's no clean way in
+     * RH(Reliable)Datagram to just enable RX.  This means that any
+     * interrupt would get cleared so if the function returns true, we
+     * must handle the packet now or it may be lost later.  In other
+     * words, we need to wait for .available() to return false.
+     */
+    while (radioManager->available())
+        radioCheckPacket();
+}
+
+/* TODO: call this in a Bottom Half */
+void Sensorino::radioCheckPacket(void) {
+    uint8_t pkt[RH_NRF24_MAX_MESSAGE_LEN], len;
+
+    radioBusy++;
+    if (radioManager->recvfromAck(pkt, &len, NULL, NULL, NULL, NULL))
+        handleMessage(pkt, len);
+    radioBusy--;
+}
+
+void Sensorino::radioInterrupt(int pin, void *s) {
+    /* Make sure the line is high since we're probably registered for
+     * both edges.
+     */
+    if (!digitalRead(CONFIG_INTR_PIN))
+        return;
+
+    /* Check if the radio is busy, e.g. this may be a Tx FIFO empty
+     * interrupt or, the ACK receival, and we're not interested in
+     * those, RadioHead should take care of them.
+     */
+    if (radioBusy)
+        return;
+
+    /* This will handle new messages */
+    sensorino->radioOpDone();
+}
+
+volatile bool Sensorino::radioBusy = 0;
+
 bool Sensorino::sendMessage(Message &m) {
-    return radioManager->sendtoWait((uint8_t *) m.getRawData(),
+    bool ret;
+
+    radioBusy++;
+    ret = radioManager->sendtoWait((uint8_t *) m.getRawData(),
             m.getRawLength(), m.getDstAddress());
+    radioBusy--;
+
+    radioOpDone();
+    return ret;
 }
 
 void Sensorino::handleMessage(const uint8_t *rawData, int len) {
