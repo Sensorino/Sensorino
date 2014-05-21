@@ -44,7 +44,7 @@ const char *Message::dataTypeToString(DataType type, CodingType *coding) {
 DataType Message::stringToDataType(const char *str) {
     struct TypeInfo *i = typeTable;
 
-    while (i->val < __INT_MAX__ && strcmp(str, i->name))
+    while (i->val < __INT_MAX__ && strcasecmp(str, i->name))
         i++;
 
     return i->val;
