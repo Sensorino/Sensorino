@@ -7,6 +7,11 @@
  #include <RH_NRF24.h>
 #endif
 
+#if (RH_PLATFORM == RH_PLATFORM_SIMULATOR)
+#define cli()
+#define sei()
+#endif
+
 #include "Sensorino.h"
 #include "Message.h"
 #include "Service.h"
@@ -43,9 +48,16 @@ Sensorino::Sensorino(int noSM) {
     if (!noSM)
         new ServiceManagerService();
 
+    PCMSK0 = 0;
+    PCMSK1 = 0;
+    PCMSK2 = 0;
+    PCICR = 0;
+
     /* Ready to go */
     pinMode(CONFIG_INTR_PIN, INPUT);
     attachGPIOInterrupt(CONFIG_INTR_PIN, radioInterrupt, NULL);
+
+    sei();
 }
 
 /* Any time we interact with the NRF24L01+, once the radio becomes idle,
@@ -176,13 +188,6 @@ Service *Sensorino::getServiceById(int id) {
 Service *Sensorino::getServiceByNum(int num) {
     return num < servicesNum ? services[num] : NULL;
 }
-
-#if (RH_PLATFORM == RH_PLATFORM_SIMULATOR)
- // compiling for special case
-void cli(){
-    // faking
-}
-#endif
 
 void Sensorino::die(const char *err) {
     cli();
