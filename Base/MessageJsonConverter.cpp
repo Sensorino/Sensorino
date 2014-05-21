@@ -1,6 +1,5 @@
 #include <stddef.h>
 
-#include "Message.h"
 #include "MessageJsonConverter.h"
 
 aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
@@ -72,5 +71,99 @@ aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
     }
 
     return obj;
+}
+
+static int messageAddElem(Message *msg, const char *name, aJsonObject *obj) {
+    DataType t = Message::stringToDataType(name);
+    if (t == (DataType) __INT_MAX__)
+        return -1;
+
+    CodingType coding;
+    Message::dataTypeToString(t, &coding);
+
+    switch (coding) {
+    case boolCoding:
+        if (obj->type != aJson_True && obj->type != aJson_False)
+            return -1;
+
+        msg->addBoolValue(t, obj->type == aJson_True);
+        break;
+
+    case intCoding:
+        if (obj->type != aJson_Int)
+            return -1;
+
+        msg->addIntValue(t, obj->valueint);
+        break;
+
+    case floatCoding:
+        if (obj->type != aJson_Int && obj->type != aJson_Float)
+            return -1;
+
+        msg->addFloatValue(t, obj->type == aJson_Int ?
+                obj->valueint : obj->valuefloat);
+        break;
+
+    default:
+        return -1;
+    }
+
+    return 0;
+}
+
+Message *MessageJsonConverter::jsonToMessage(aJsonObject &obj) {
+    Message *msg;
+    aJsonObject *val;
+
+    if (obj.type != aJson_Object)
+        return NULL;
+
+    val = aJson.getObjectItem(&obj, "from");
+    if (!val || val->type != aJson_Int)
+        return NULL;
+
+    uint8_t from = 0;
+    uint8_t to = val->valueint;
+
+    msg = new Message(from, to);
+
+    for (val = obj.child; val; val = val->next) {
+        if (!strcasecmp(val->name, "from")) {
+            /* Skip */
+            continue;
+        }
+
+        if (!strcasecmp(val->name, "type")) {
+            if (val->type != aJson_String)
+                goto err;
+
+            if (!strcmp(val->valuestring, "publish"))
+                msg->setType(PUBLISH);
+            else if (!strcmp(val->valuestring, "set"))
+                msg->setType(SET);
+            else if (!strcmp(val->valuestring, "request"))
+                msg->setType(REQUEST);
+            else if (!strcmp(val->valuestring, "err"))
+                msg->setType(ERR);
+            else
+                goto err;
+
+            continue;
+        }
+
+        if (val->type == aJson_Array) {
+            for (aJsonObject *elem; elem; elem = elem->next)
+                if (messageAddElem(msg, val->name, elem))
+                    goto err;
+        } else
+            if (messageAddElem(msg, val->name, val))
+                goto err;
+    }
+
+    return msg;
+
+err:
+    delete msg;
+    return NULL;
 }
 /* vim: set sw=4 ts=4 et: */
