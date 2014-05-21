@@ -7,56 +7,57 @@
 
 
 enum MessageType {
-        ERR     = 0,
-        GARBAGE = 1,
-        PUBLISH = 2,
-        SET     = 3,
-        REQUEST = 4,
-        ACK     = 5,
-        STREAM  = 6,
-        CONFIG  = 7,
+    ERR     = 0,
+    GARBAGE = 1,
+    PUBLISH = 2,
+    SET     = 3,
+    REQUEST = 4,
+    ACK     = 5,
+    STREAM  = 6,
+    CONFIG  = 7,
 };
 
+#define DATATYPE_LIST_APPLY(F)	\
+    /* Metatypes */\
+    F(0, DATATYPE, DataType, int)\
+    F(1, SERVICE_ID, ServiceId, int)\
+    /* ISO-defined physical dimensions */\
+    F(20, ACCELERATION, Acceleration, float)\
+    F(21, AMOUNT, Amount, float)\
+    F(22, ANGLE, Angle, float)\
+    F(23, ANGULAR_VELOCITY, AngularVelocity, float)\
+    F(24, AREA, Area, float)\
+    F(25, RADIOACTIVITY, Radioactivity, float)\
+    F(26, ELECTRICAL_CAPACITANCE, ElectricalCapacitance, float)\
+    F(27, ELECTRICAL_RESISTANCE, ElectricalResistance, float)\
+    F(28, ELECTRIC_CURRENT, ElectricCurrent, float)\
+    F(29, ENERGY, Energy, float)\
+    F(30, FORCE, Force, float)\
+    F(31, FREQUENCY, Frequency, float)\
+    F(32, ILLUMINANCE, Illuminance, float)\
+    F(33, INDUCTANCE, Inductance, float)\
+    F(34, LENGTH, Length, float)\
+    F(35, LUMINOUS_FLUX, LuminousFlux, float)\
+    F(36, LUMINOUS_INTENSITY, LuminousIntensity, float)\
+    F(37, MAGNETIC_FIELD_STRENGTH, MagneticFieldStrength, float)\
+    F(38, MASS, Mass, float)\
+    F(39, POWER, Power, float)\
+    F(40, PRESSURE, Pressure, float)\
+    F(41, RELATIVE_HUMIDITY, RelativeHumidity, float)\
+    F(42, SPEED, Speed, float)\
+    F(43, TEMPERATURE, Temperature, float)\
+    F(44, TIME, Time, float)\
+    F(45, VOLTAGE, Voltage, float)\
+    F(46, VOLUME, Volume, float)\
+    /* Other common types */\
+    F(50, COUNT, Count, int)\
+    F(51, PRESENCE, Presence, bool)\
+    F(52, SWITCH, Switch, bool)
+
 enum DataType {
-    /* Metatypes */
-    DATATYPE                = 0,
-    SERVICE_ID,
-
-    /* ISO-defined physical dimensions */
-    ACCELERATION            = 21,
-    AMOUNT                  = 22,
-    ANGLE                   = 23,
-    ANGULAR_VELOCITY        = 24,
-    AREA                    = 25,
-    RADIOACTIVITY           = 26,
-    ELECTRICAL_CAPACITANCE  = 27,
-    ELECTRICAL_RESISTANCE   = 28,
-    ELECTRIC_CURRENT        = 29,
-    ENERGY                  = 30,
-    FORCE                   = 31,
-    FREQUENCY               = 32,
-    ILLUMINANCE             = 33,
-    INDUCTANCE              = 34,
-    LENGTH                  = 35,
-    LUMINOUS_FLUX           = 36,
-    LUMINOUS_INTENSITY      = 37,
-    MAGNETIC_FIELD_STRENGTH = 38,
-    MASS                    = 39,
-    POWER                   = 40,
-    PRESSURE                = 41,
-    RELATIVE_HUMIDITY       = 42,
-    SPEED                   = 43,
-    TEMPERATURE             = 44,
-    TIME                    = 45,
-    VOLTAGE                 = 46,
-    VOLUME                  = 47,
-
-    /* Other */
-    COUNT                   = 50,
-    PRESENCE,
-    SWITCH,
-
-    __NUM_DATA_TYPES,
+#define CAPS_ENUM(intval, CAPS, Camel, coding) \
+    CAPS = intval,
+DATATYPE_LIST_APPLY(CAPS_ENUM)
 };
 
 #define HEADERS_LENGTH 4
@@ -108,60 +109,19 @@ class Message{
         void addFloat(float value);
         void addInt(int value);
 
-        void addAcceleration(float acceleration);
-        void addAcceleration(int acceleration);
-        void addAmount(float amount);
-        void addAmount(int amount);
-        void addAngle(float angle);
-        void addAngle(int angle);
-        void addAngular_velocity(float velocity);
-        void addAngular_velocity(int velocity);
-        void addArea(float area);
-        void addArea(int area);
-        void addElectrical_capacitance(float capacitance);
-        void addElectrical_capacitance(int capacitance);
-        void addElectrical_resistance(float resistance);
-        void addElectrical_resistance(int resistance);
-        void addElectric_current(float current);
-        void addElectric_current(int current);
-        void addEnergy(float energy);
-        void addEnergy(int energy);
-        void addForce(float force);
-        void addForce(int force);
-        void addFrequency(float frequency);
-        void addFrequency(int frequency);
-        void addHumidity(float relative_humidity);
-        void addHumidity(int relative_humidity);
-        void addIlluminance(float illuminance);
-        void addIlluminance(int illuminance);
-        void addInductance(float inductance);
-        void addInductance(int inductance);
-        void addLength(float length);
-        void addLength(int length);
-        void addLuminous_flux(float luminous_flux);
-        void addLuminous_flux(int luminous_flux);
-        void addLuminous_intensity(float luminous_intensity);
-        void addLuminous_intensity(int luminous_intensity);
-        void addMagnetic_field_strength(float magnetic_field_strength);
-        void addMagnetic_field_strength(int magnetic_field_strength);
-        void addMass(float mass);
-        void addMass(int mass);
-        void addPower(float power);
-        void addPower(int power);
-        void addPressure(float pressure);
-        void addPressure(int pressure);
-        void addRadioactivity(float radioactivity);
-        void addRadioactivity(int radioactivity);
-        void addSpeed(float speed);
-        void addSpeed(int speed);
-        void addTemperature(float temperature);
-        void addTemperature(int temperature);
-        void addTime(float time);
-        void addTime(int time);
-        void addVoltage(float voltage);
-        void addVoltage(int voltage);
-        void addVolume(float volume);
-        void addVolume(int volume);
+        /* Accessors for types encoded as floats */
+#define _glue(x, y)  x##y
+#define glue(...) _glue(__VA_ARGS__)
+#define int(...)
+#define bool(...)
+#define float(CamelName) \
+        void glue(add, CamelName)(float val); \
+        void glue(add, CamelName)(int val);
+#define FLOAT_INT_ACCESSOR(intval, CAPS, Camel, coding) coding(Camel)
+DATATYPE_LIST_APPLY(FLOAT_INT_ACCESSOR)
+#undef float
+#undef bool
+#undef int
 
     protected:
         uint8_t raw[HEADERS_LENGTH + PAYLOAD_LENGTH];
