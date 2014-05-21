@@ -73,6 +73,7 @@ class Message{
         Message(const uint8_t *raw, int len);
 
         static const char *dataTypeToString(DataType t);
+        static DataType stringToDataType(const char *str);
 
         /* NOTE: this blocks */
         bool send(void);
