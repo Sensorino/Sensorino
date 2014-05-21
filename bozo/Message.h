@@ -142,6 +142,8 @@ DATATYPE_LIST_APPLY(FLOAT_INT_ACCESSOR)
         uint8_t rawLen;
 
         static uint8_t staticId;
+
+        void checkIntegrity();
 };
 
 #endif // whole file

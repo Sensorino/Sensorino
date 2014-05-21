@@ -1,1 +1,2 @@
-g++ -isystem gmock/gmock-1.7.0/gtest/include/ -I gmock/gmock-1.7.0/gtest/  -isystem  gmock/gmock-1.7.0/include/ -I gmock -pthread  -I . test_Message.cpp Message.cpp gmock/libgmock.a  -o test
+g++ -isystem gmock/gmock-1.7.0/gtest/include/ -I gmock/gmock-1.7.0/gtest/  -isystem  gmock/gmock-1.7.0/include/ -I gmock -pthread -I ../libraries/RadioHead -I ../libraries/RadioHead/RHutil  -I . test_Message.cpp Message.cpp Sensorino.cpp ../libraries/RadioHead/Dummy.cpp ../libraries/RadioHead/RHGenericDriver.cpp ../libraries/RadioHead/RHReliableDatagram.cpp ../libraries/RadioHead/RHDatagram.cpp ../libraries/RadioHead/RHutil/simulator.cpp  Service.cpp  gmock/libgmock.a  -o test
+ 
