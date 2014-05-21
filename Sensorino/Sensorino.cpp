@@ -1,5 +1,11 @@
-#include <RH_NRF24.h>
 #include <RHReliableDatagram.h>
+#if (RH_PLATFORM == RH_PLATFORM_SIMULATOR) 
+ // Simulate the sketch on Linux
+ #include <RHutil/simulator.h>
+ #include <Dummy.h>
+#else
+ #include <RH_NRF24.h>
+#endif
 
 #include "Sensorino.h"
 #include "Message.h"
@@ -21,8 +27,12 @@ Sensorino::Sensorino(int noSM) {
      * subclass of Config).
      */
 
-    RHGenericDriver *radio = new RH_NRF24(CONFIG_CE_PIN, CONFIG_CSN_PIN);
     // Class to manage message delivery and receipt, using the driver declared above
+    #if (RH_PLATFORM == RH_PLATFORM_SIMULATOR)
+    RHGenericDriver *radio = new Dummy();
+    #else
+    RHGenericDriver *radio = new RH_NRF24(CONFIG_CE_PIN, CONFIG_CSN_PIN);
+    #endif
     radioManager = new RHReliableDatagram(*radio, address);
 
     servicesNum = 0;
@@ -167,6 +177,13 @@ Service *Sensorino::getServiceByNum(int num) {
     return num < servicesNum ? services[num] : NULL;
 }
 
+#if (RH_PLATFORM == RH_PLATFORM_SIMULATOR)
+ // compiling for special case
+void cli(){
+    // faking
+}
+#endif
+
 void Sensorino::die(const char *err) {
     cli();
     Serial.begin(115200);
@@ -177,14 +194,21 @@ void Sensorino::die(const char *err) {
     }
     Serial.write("\nStopping\n");
     /* TODO: also broadcast the same stuff over all radio channels, etc.? */
+    #if (RH_PLATFORM == RH_PLATFORM_SIMULATOR)
+        exit(2);
+    #endif
+
     while (1);
 }
 
-/* Globals.. can be moved to Sensorino as statics */
-#ifndef __AVR_ATmega328P__
+#if (RH_PLATFORM != RH_PLATFORM_SIMULATOR)
+
+/* The numbers of ports and pins below are model specific */
+#ifdef __AVR_ATmega328P__
 # error Only 328P supported for now
 #endif
 
+/* Globals.. can be moved to Sensorino as statics */
 static void (*gpio_handler[NUM_DIGITAL_PINS])(int pin, void *data);
 static void *gpio_data[NUM_DIGITAL_PINS];
 static uint8_t port_val[3];
@@ -233,8 +257,9 @@ void Sensorino::attachGPIOInterrupt(int pin,
     *digitalPinToPCMSK(pin) |= 1 << digitalPinToPCMSKbit(pin);
     *digitalPinToPCICR(pin) |= 1 << digitalPinToPCICRbit(pin);
 }
+#endif
 
-/* Potnetially-temporary global single sensorino instance.  We can pass this
+/* Potentially-temporary global single sensorino instance.  We can pass this
  * pointer around when calling service constructors later, for the moment
  * let's use a global...
  */

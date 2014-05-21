@@ -123,6 +123,7 @@ const uint8_t *Message::getRawData(void) {
     return raw;
 }
 
+
 int Message::getRawLength(void) {
     return rawLen;
 }
@@ -202,7 +203,18 @@ void Message::addIntValue(DataType t, int value){
     raw[rawLen]=length;
     rawLen+=1+length;
 
+    checkIntegrity();
 }
+
+
+inline void Message::checkIntegrity(){
+    if (rawLen> HEADERS_LENGTH + PAYLOAD_LENGTH){
+        //We should stop adding stuff or we'll crash
+        Sensorino::die("constructing message bigger that max size");
+    }
+}
+
+
 
 void Message::addInt(int value){
     // Type
@@ -225,6 +237,9 @@ void Message::addFloatValue(DataType t, float value){
     raw[rawLen++]=(d & 0xFF00) >> 8;
     raw[rawLen++]=(d & 0xFF0000) >> 16;
     raw[rawLen++]=(d & 0xFF000000) >> 24;
+
+
+    checkIntegrity();
 }
 
 void Message::addDataTypeValue(DataType t){
@@ -239,6 +254,8 @@ void Message::addBoolValue(DataType t, int value){
     // Len + Value
     raw[rawLen++]=1;
     raw[rawLen++]=!!value;
+
+    checkIntegrity();
 }
 
 #define int(...)
