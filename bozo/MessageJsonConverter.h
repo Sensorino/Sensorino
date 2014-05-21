@@ -7,13 +7,16 @@
 
 class MessageJsonConverter {
 public:
-    /* Json -> Message conversion (stateful) */
+    /* Json parser support (stateful) */
     MessageJsonConverter();
     void putch(uint8_t chr);
     aJsonObject *obj;
 
     /* Message -> Json conversion (stateless) */
     static aJsonObject *messageToJson(Message &m);
+
+    /* Json -> Message conversion (stateless) */
+    static Message *jsonToMessage(aJsonObject &obj);
 
 private:
     uint8_t obj_str[128];
