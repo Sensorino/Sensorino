@@ -2,6 +2,11 @@
 
 #include "MessageJsonConverter.h"
 
+static char lower(char chr) {
+    if (chr >= 'A' && chr <= 'Z')
+        return chr - 'A' + 'a';
+}
+
 aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
     aJsonObject *obj = aJson.createObject();
 
@@ -40,7 +45,8 @@ aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
     for (Message::iter i = m.begin(); i; m.iterAdvance(i)) {
         DataType t;
         uint32_t val;
-        const char *name;
+        const char *cname;
+        char name[50];
         CodingType coding;
         aJsonObject *parent, *child;
 
@@ -48,7 +54,9 @@ aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
         if (t == (DataType) -1)
             continue; /* TODO: Add a note in the JSON output */
 
-        name = Message::dataTypeToString(t, &coding);
+        cname = Message::dataTypeToString(t, &coding);
+        strcpy(name, cname);
+        name[0] = lower(name[0]);
 
         switch (coding) {
         case boolCoding:
