@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "Message.h"
 #include "Sensorino.h"
 
@@ -9,15 +11,46 @@ const uint8_t nullType=5;
 const uint8_t floatType=9;
 const uint8_t charStringType=29;
 
-const char *Message::dataTypeToString(DataType type){
-    switch(type) {
-#define TYPE_TO_STR_CASE(intval, CAPS, Camel, coding) \
-    case CAPS: \
-        return #Camel;
-DATATYPE_LIST_APPLY(TYPE_TO_STR_CASE)
-    default:
-        return "Unknown";
-    }
+enum CodingType {
+    intCoding,
+    floatCoding,
+    boolCoding,
+};
+
+/* TODO: move to progmem */
+static struct TypeInfo {
+    DataType val;
+    const char *name;
+    CodingType coding;
+} typeTable[] = {
+#define TYPEINFO_INITIALISER(intval, CAPS, Camel, coding) \
+    { CAPS, #Camel, glue(coding, Coding) },
+DATATYPE_LIST_APPLY(TYPEINFO_INITIALISER)
+    { (DataType) __INT_MAX__, NULL, (enum CodingType) -1 }, /* Sentinel */
+};
+
+static struct TypeInfo *getTypeInfo(DataType type) {
+    struct TypeInfo *i = typeTable;
+
+    while (type > i->val)
+        i++;
+
+    return type == i->val ? i : NULL;
+}
+
+const char *Message::dataTypeToString(DataType type) {
+    struct TypeInfo *i = getTypeInfo(type);
+
+    return i ? i->name : "Unknown";
+}
+
+DataType Message::stringToDataType(const char *str) {
+    struct TypeInfo *i = typeTable;
+
+    while (i->val < __INT_MAX__ && strcmp(str, i->name))
+        i++;
+
+    return i->val;
 }
 
 uint8_t Message::staticId;
@@ -97,6 +130,7 @@ int Message::getRawLength(void) {
     return rawLen;
 }
 
+/* For now use the handcrafted macros to avoid dependency on the big table */
 #define BOOL_TYPE(t) (t == PRESENCE || t == SWITCH)
 #define INT_TYPE(t) (t == DATATYPE || t == COUNT || t == SERVICE_ID)
 #define FLOAT_TYPE(t) (t >= ACCELERATION && t < COUNT)
