@@ -257,4 +257,56 @@ DATATYPE_LIST_APPLY(FLOAT_INT_ACCESSOR_IMPL)
 #undef float
 #undef bool
 #undef int
+
+Message::iter Message::begin() {
+    return rawLen > HEADERS_LENGTH ? HEADERS_LENGTH : 0;
+}
+
+void Message::iterAdvance(Message::iter &i) {
+    if (i > rawLen - 3)
+        i = 0;
+    else {
+        if (raw[i++] != extendedType)
+           i++;
+        int len = raw[i++];
+        i += len;
+        if (i >= rawLen)
+            i = 0;
+    }
+}
+
+void Message::iterGetTypeValue(Message::iter i, DataType *type, void *val) {
+    DataType t;
+
+    if (raw[i++] != extendedType) {
+        *type = (DataType) -1;
+        return;
+    }
+
+    t = (DataType) raw[i++];
+    if (type)
+        *type = t;
+
+    if (val) {
+        if (BOOL_TYPE(t))
+            *(int *) val = raw[i] != 0;
+        else if (FLOAT_TYPE(t)) {
+            uint32_t float_val;
+
+            float_val = raw[i++];
+            float_val |= raw[i++] << 8;
+            float_val |= raw[i++] << 16;
+            float_val |= raw[i++] << 24;
+            *(uint32_t *) val = float_val;
+        } else if (INT_TYPE(t)) {
+            uint16_t int_val;
+
+            int_val = raw[i++] << 8;
+            int_val |= raw[i];
+
+            *(int *) val = int_val;
+        }
+    }
+}
+
 /* vim: set sw=4 ts=4 et: */
