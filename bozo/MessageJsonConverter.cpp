@@ -42,6 +42,7 @@ aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
         uint32_t val;
         const char *name;
         CodingType coding;
+        aJsonObject *parent, *child;
 
         m.iterGetTypeValue(i, &t, &val);
         if (t == (DataType) -1)
@@ -49,25 +50,45 @@ aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
 
         name = Message::dataTypeToString(t, &coding);
 
-        /* TODO: check if name is a duplicate.. if so, create a list.
-         * This is required because a JSON object is an unordered set
-         * of name/value pairs, so the order is lost if we just add
-         * a second pair with the same name.
-         */
         switch (coding) {
         case boolCoding:
-            aJson.addBooleanToObject(obj, name, (bool) *(int *) val);
+            child = aJson.createItem((char) *(int *) val);
             break;
         case intCoding:
-            aJson.addNumberToObject(obj, name, *(int *) val);
+            child = aJson.createItem(*(int *) val);
             break;
         case floatCoding:
-            aJson.addNumberToObject(obj, name, (double) *(float *) val);
+            child = aJson.createItem((double) *(float *) val);
             break;
         default:
-            aJson.addStringToObject(obj, name, "fixme");
+            child = aJson.createItem("fixme");
             break;
         }
+
+        /* See if there is an item of the same name already. */
+        parent = aJson.getObjectItem(obj, name); /* slow lookup :/ */
+
+        /* If there is one and it's not an array, convert it into a
+         * one-element array so we can append the new item to it.  This
+         * is necessary because, even though JSON objects don't
+         * explicitly disallow pairs with identical names, an object
+         * is defined as being unordered meaning that the order of
+         * same-typed elements would be lost, unlike in a list.
+         */
+        if (parent) {
+            if (parent->type != aJson_Array) {
+                /* Low-level but less inefficient */
+                aJsonObject *copy = aJson.createNull();
+                copy->type = parent->type;
+                copy->child = parent->child;
+                copy->valuefloat = parent->valuefloat;
+                parent->type = aJson_Array;
+                parent->child = NULL;
+                aJson.addItemToArray(parent, copy);
+            }
+            aJson.addItemToArray(parent, child);
+        } else
+            aJson.addItemToObject(obj, name, child);
     }
 
     return obj;
