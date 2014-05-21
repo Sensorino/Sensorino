@@ -19,7 +19,7 @@ public:
     static Message *jsonToMessage(aJsonObject &obj);
 
 private:
-    uint8_t obj_str[128];
+    uint8_t obj_str[128], obj_str_len, nest_depth, escape, quote;
 };
 
 #endif // whole file

@@ -3,6 +3,7 @@
 #include <Sensorino.h>
 #include <RelayService.h>
 #include <Timers.h>
+#include <aJSON.h>
 
 Sensorino s;
 RelayService rs(1, 13, 0); /* The onboard LED is the "relay" */

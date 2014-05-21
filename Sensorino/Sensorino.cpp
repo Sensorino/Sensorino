@@ -204,7 +204,7 @@ void Sensorino::die(const char *err) {
 #if (RH_PLATFORM != RH_PLATFORM_SIMULATOR)
 
 /* The numbers of ports and pins below are model specific */
-#ifdef __AVR_ATmega328P__
+#ifndef __AVR_ATmega328P__
 # error Only 328P supported for now
 #endif
 
