@@ -11,12 +11,6 @@ const uint8_t nullType=5;
 const uint8_t floatType=9;
 const uint8_t charStringType=29;
 
-enum CodingType {
-    intCoding,
-    floatCoding,
-    boolCoding,
-};
-
 /* TODO: move to progmem */
 static struct TypeInfo {
     DataType val;
@@ -38,8 +32,11 @@ static struct TypeInfo *getTypeInfo(DataType type) {
     return type == i->val ? i : NULL;
 }
 
-const char *Message::dataTypeToString(DataType type) {
+const char *Message::dataTypeToString(DataType type, CodingType *coding) {
     struct TypeInfo *i = getTypeInfo(type);
+
+    if (coding)
+        *coding = i ? i->coding : (enum CodingType) -1;
 
     return i ? i->name : "Unknown";
 }

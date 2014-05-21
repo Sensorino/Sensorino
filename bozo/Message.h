@@ -60,6 +60,12 @@ enum DataType {
 DATATYPE_LIST_APPLY(CAPS_ENUM)
 };
 
+enum CodingType {
+    intCoding,
+    floatCoding,
+    boolCoding,
+};
+
 #define HEADERS_LENGTH 4
 #define PAYLOAD_LENGTH 20
 
@@ -72,7 +78,8 @@ class Message{
         /* Use this to grok a message you received */
         Message(const uint8_t *raw, int len);
 
-        static const char *dataTypeToString(DataType t);
+        static const char *dataTypeToString(DataType t,
+                CodingType *coding = NULL);
         static DataType stringToDataType(const char *str);
 
         /* NOTE: this blocks */
