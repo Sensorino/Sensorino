@@ -131,6 +131,12 @@ DATATYPE_LIST_APPLY(FLOAT_INT_ACCESSOR)
 #undef bool
 #undef int
 
+        /* Payload C++-like iterator */
+        typedef uint8_t iter;
+        iter begin();
+        void iterAdvance(iter &i);
+        void iterGetTypeValue(iter i, DataType *type, void *val);
+
     protected:
         uint8_t raw[HEADERS_LENGTH + PAYLOAD_LENGTH];
         uint8_t rawLen;
