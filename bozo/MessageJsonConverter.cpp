@@ -166,4 +166,44 @@ err:
     delete msg;
     return NULL;
 }
+
+MessageJsonConverter::MessageJsonConverter() {
+    obj_str_len = 0;
+    nest_depth = 0;
+    quote = 0;
+    escape = 0;
+}
+
+void MessageJsonConverter::putch(uint8_t chr) {
+    if (!quote)
+        if (chr <= ' ')
+            return;
+
+    if (obj_str_len >= sizeof(obj_str) - 1)
+        return;
+
+    obj_str[obj_str_len++] = chr;
+    /* TODO: multibyte chars */
+    if (quote && !escape && chr == '\\')
+        escape = 1;
+    else if (!escape && chr == '"')
+        quote = !quote;
+    else if (!quote) {
+        if (chr == '{' || chr == '[' || chr == '(')
+            nest_depth++;
+        if (chr == '}' || chr == ']' || chr == ')') {
+            nest_depth--;
+
+            if (nest_depth <= 0) {
+                /* End of JSON object detected */
+                obj_str[obj_str_len++] = 0;
+                if (!obj)
+                    obj = aJson.parse((char *) obj_str);
+
+                obj_str_len = 0;
+                nest_depth = 0;
+            }
+        }
+    }
+}
 /* vim: set sw=4 ts=4 et: */
