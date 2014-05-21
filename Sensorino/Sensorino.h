@@ -51,7 +51,12 @@ class Sensorino
         void radioOpDone(void);
         void radioCheckPacket(void);
         static void radioInterrupt(int pin, void *s);
-        static volatile bool radioBusy;
+
+        #if (RH_PLATFORM != RH_PLATFORM_SIMULATOR) 
+         static volatile bool radioBusy;
+        #else
+         static volatile uint8_t radioBusy;
+        #endif
 };
 
 extern Sensorino *sensorino;
