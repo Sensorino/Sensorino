@@ -1,6 +1,7 @@
 #include <RHReliableDatagram.h>
 #if (RH_PLATFORM == RH_PLATFORM_SIMULATOR) 
  // Simulate the sketch on Linux
+ #include <MockArduino.h>
  #include <RHutil/simulator.h>
  #include <Dummy.h>
 #else
@@ -11,6 +12,13 @@
 #define cli()
 #define sei()
 #endif
+
+#if (RH_PLATFORM == RH_PLATFORM_SIMULATOR)
+  #define MAX_MESSAGE_LEN 28
+#else
+  #define MAX_MESSAGE_LEN RH_NRF24_MAX_MESSAGE_LEN
+#endif
+
 
 #include "Sensorino.h"
 #include "Message.h"
@@ -84,7 +92,7 @@ void Sensorino::radioOpDone(void) {
 
 /* TODO: call this in a Bottom Half */
 void Sensorino::radioCheckPacket(void) {
-    uint8_t pkt[RH_NRF24_MAX_MESSAGE_LEN], len;
+    uint8_t pkt[MAX_MESSAGE_LEN], len;
 
     radioBusy++;
     if (radioManager->recvfromAck(pkt, &len, NULL, NULL, NULL, NULL))
@@ -110,7 +118,12 @@ void Sensorino::radioInterrupt(int pin, void *s) {
     sensorino->radioOpDone();
 }
 
-volatile bool Sensorino::radioBusy = 0;
+#if (RH_PLATFORM == RH_PLATFORM_SIMULATOR)
+ volatile uint8_t Sensorino::radioBusy = 0;
+#else
+ volatile bool Sensorino::radioBusy = 0;
+#endif
+
 
 bool Sensorino::sendMessage(Message &m) {
     bool ret;
@@ -262,6 +275,9 @@ void Sensorino::attachGPIOInterrupt(int pin,
     *digitalPinToPCMSK(pin) |= 1 << digitalPinToPCMSKbit(pin);
     *digitalPinToPCICR(pin) |= 1 << digitalPinToPCICRbit(pin);
 }
+#else
+void Sensorino::attachGPIOInterrupt(int pin,
+        void (*handler)(int pin, void *data), void *data) {}
 #endif
 
 /* Potentially-temporary global single sensorino instance.  We can pass this
