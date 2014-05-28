@@ -14,12 +14,19 @@
 # define unlikely(x)	__builtin_expect((x), 0)
 #endif
 
+void watchdogConfig(uint8_t x) {
+    WDTCSR = _BV(WDCE) | _BV(WDE);
+    WDTCSR = x;
+}
+
 MessageJsonConverter conv;
 
 RH_NRF24 radio(CONFIG_CE_PIN, CONFIG_CSN_PIN);
 RHReliableDatagram radioManager(radio, 0);
 
 void Base::setup() {
+    watchdogConfig(0);
+
     Serial.begin(115200);
 
     PCMSK0 = 0;
