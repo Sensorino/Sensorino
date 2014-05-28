@@ -65,24 +65,24 @@ aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
 
         switch (coding) {
         case boolCoding:
-            child = aJson.createItem((char) *(int *) val);
+            child = aJson.createItem((char) *(int *) &val);
             break;
         case intCoding:
             if (isEnumType(t))
                 switch (t) {
                 case DATATYPE:
                     enumId = Message::dataTypeToString(
-                            (DataType) *(int *) val, NULL);
+                            (DataType) *(int *) &val, NULL);
                     break;
                 }
 
             if (enumId)
                 child = aJson.createItem(enumId);
             else
-                child = aJson.createItem(*(int *) val);
+                child = aJson.createItem(*(int *) &val);
             break;
         case floatCoding:
-            child = aJson.createItem((double) *(float *) val);
+            child = aJson.createItem((double) *(float *) &val);
             break;
         default:
             child = aJson.createItem("fixme");
