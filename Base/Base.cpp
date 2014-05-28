@@ -45,6 +45,21 @@ void Base::setup() {
     sei();
 }
 
+static bool checkJsonError(aJsonObject *obj) {
+    if (aJson.getObjectItem(obj, "type"))
+        return 0;
+
+    if (aJson.getObjectItem(obj, "error")) {
+        char *str = aJson.print(obj);
+        Serial.write(str);
+        free(str);
+        return 1;
+    }
+
+    Serial.write("{\"error\":\"noType\"}");
+    return 1;
+}
+
 void Base::loop() {
     /* Wait until something happens on UART or radio */
     __asm__ volatile ("sleep");
@@ -54,14 +69,18 @@ void Base::loop() {
 
         /* We've received and parsed a new JSON message */
         if (conv.obj) {
-            Message *msg = MessageJsonConverter::jsonToMessage(*conv.obj);
+            Message *msg = NULL;
+
+            if (!checkJsonError(conv.obj))
+                msg = MessageJsonConverter::jsonToMessage(*conv.obj);
             aJson.deleteItem(conv.obj);
             conv.obj = NULL;
 
             /* Succesfully converted to Message */
             if (msg) {
-                radioManager.sendtoWait((uint8_t *) msg->getRawData(),
-                        msg->getRawLength(), msg->getDstAddress());
+                if (!radioManager.sendtoWait((uint8_t *) msg->getRawData(),
+                        msg->getRawLength(), msg->getDstAddress()))
+                    Serial.write("{\"error\":\"xmitError\"}");
                 delete msg;
             }
         }

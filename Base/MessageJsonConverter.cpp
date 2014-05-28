@@ -262,11 +262,14 @@ void MessageJsonConverter::putch(uint8_t chr) {
         if (chr == '}' || chr == ']' || chr == ')') {
             nest_depth--;
 
-            if (nest_depth <= 0) {
+            if ((int8_t) nest_depth <= 0) {
                 /* End of JSON object detected */
                 obj_str[obj_str_len++] = 0;
-                if (!obj)
+                if (!obj) {
                     obj = aJson.parse((char *) obj_str);
+                    if (!obj)
+                        obj = aJson.parse("{\"error\":\"syntaxError\"}");
+                }
 
                 obj_str_len = 0;
                 nest_depth = 0;
