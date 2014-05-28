@@ -35,10 +35,10 @@ static struct TypeInfo *getTypeInfo(DataType type) {
 const char *Message::dataTypeToString(DataType type, CodingType *coding) {
     struct TypeInfo *i = getTypeInfo(type);
 
-    if (coding)
-        *coding = i ? i->coding : (enum CodingType) -1;
+    if (coding && i)
+        *coding = i->coding;
 
-    return i ? i->name : "Unknown";
+    return i ? i->name : NULL;
 }
 
 DataType Message::stringToDataType(const char *str) {

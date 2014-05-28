@@ -47,15 +47,15 @@ aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
         uint32_t val;
         const char *cname;
         char name[50];
-        CodingType coding;
+        CodingType coding = (CodingType) -1;
         aJsonObject *parent, *child;
 
         m.iterGetTypeValue(i, &t, &val);
         if (t == (DataType) -1)
             continue; /* TODO: Add a note in the JSON output */
 
-        cname = Message::dataTypeToString(t, &coding);
-        strcpy(name, cname);
+        cname = Message::dataTypeToString(t, &coding) ?: "Unknown";
+        strncpy(name, cname, sizeof(name));
         name[0] = lower(name[0]);
 
         switch (coding) {
@@ -107,8 +107,9 @@ static int messageAddElem(Message *msg, const char *name, aJsonObject *obj) {
     if (t == (DataType) __INT_MAX__)
         return -1;
 
-    CodingType coding;
-    Message::dataTypeToString(t, &coding);
+    CodingType coding = (CodingType) -1;
+    if (!Message::dataTypeToString(t, &coding))
+        return -1;
 
     switch (coding) {
     case boolCoding:
