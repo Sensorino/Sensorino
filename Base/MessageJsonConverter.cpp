@@ -220,7 +220,7 @@ Message *MessageJsonConverter::jsonToMessage(aJsonObject &obj) {
         }
 
         if (val->type == aJson_Array) {
-            for (aJsonObject *elem; elem; elem = elem->next)
+            for (aJsonObject *elem = val->child; elem; elem = elem->next)
                 if (messageAddElem(msg, val->name, elem))
                     goto err;
         } else
