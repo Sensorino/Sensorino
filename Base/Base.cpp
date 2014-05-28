@@ -1,5 +1,6 @@
-#include <RHReliableDatagram.h>
-#include <RH_NRF24.h>
+//#include <RHReliableDatagram.h>
+//#include <RH_NRF24.h>
+#include "mini-radiohead.h"
 
 #include "Base.h"
 #include "MessageJsonConverter.h"
@@ -82,7 +83,8 @@ void Base::loop() {
                         msg->getRawLength(), msg->getDstAddress()))
                     Serial.write("{\"error\":\"xmitError\"}");
                 delete msg;
-            }
+            } else
+                Serial.write("{\"error\":\"structError\"}");
         }
     }
 
