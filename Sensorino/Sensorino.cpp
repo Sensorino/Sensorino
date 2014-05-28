@@ -101,10 +101,10 @@ void Sensorino::radioCheckPacket(void) {
 }
 
 void Sensorino::radioInterrupt(int pin, void *s) {
-    /* Make sure the line is high since we're probably registered for
-     * both edges.
+    /* Make sure the line is low since we're probably registered for
+     * both edges.  The NRF24L01+ interrupt is active-low.
      */
-    if (!digitalRead(CONFIG_INTR_PIN))
+    if (digitalRead(CONFIG_INTR_PIN))
         return;
 
     /* Check if the radio is busy, e.g. this may be a Tx FIFO empty
