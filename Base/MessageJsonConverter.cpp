@@ -178,21 +178,25 @@ static int messageAddElem(Message *msg, const char *name, aJsonObject *obj) {
 Message *MessageJsonConverter::jsonToMessage(aJsonObject &obj) {
     Message *msg;
     aJsonObject *val;
+    uint8_t from, to;
 
     if (obj.type != aJson_Object)
         return NULL;
 
-    val = aJson.getObjectItem(&obj, "from");
+    val = aJson.getObjectItem(&obj, "to");
     if (!val || val->type != aJson_Int)
         return NULL;
+    to = val->valueint;
 
-    uint8_t from = 0;
-    uint8_t to = val->valueint;
+    val = aJson.getObjectItem(&obj, "from");
+    if (val && val->type != aJson_Int)
+        return NULL;
+    from = val ? val->valueint : 0;
 
     msg = new Message(from, to);
 
     for (val = obj.child; val; val = val->next) {
-        if (!strcasecmp(val->name, "from")) {
+        if (!strcasecmp(val->name, "to") || !strcasecmp(val->name, "from")) {
             /* Skip */
             continue;
         }
