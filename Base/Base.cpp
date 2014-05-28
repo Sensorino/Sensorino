@@ -49,17 +49,21 @@ void Base::loop() {
     /* Wait until something happens on UART or radio */
     __asm__ volatile ("sleep");
 
-    /* We've received and parsed a new JSON message */
-    if (conv.obj) {
-        Message *msg = MessageJsonConverter::jsonToMessage(*conv.obj);
-        aJson.deleteItem(conv.obj);
-        conv.obj = NULL;
+    while (Serial.available()) {
+        conv.putch(Serial.read());
 
-        /* Succesfully converted to Message */
-        if (msg) {
-            radioManager.sendtoWait((uint8_t *) msg->getRawData(),
-                    msg->getRawLength(), msg->getDstAddress());
-            delete msg;
+        /* We've received and parsed a new JSON message */
+        if (conv.obj) {
+            Message *msg = MessageJsonConverter::jsonToMessage(*conv.obj);
+            aJson.deleteItem(conv.obj);
+            conv.obj = NULL;
+
+            /* Succesfully converted to Message */
+            if (msg) {
+                radioManager.sendtoWait((uint8_t *) msg->getRawData(),
+                        msg->getRawLength(), msg->getDstAddress());
+                delete msg;
+            }
         }
     }
 
@@ -82,6 +86,7 @@ void Base::loop() {
     }
 }
 
+#if 0
 ISR(USART_RX_vect) {
     uint8_t status = UCSR0A;
     uint8_t ch = UDR0;
@@ -91,12 +96,27 @@ ISR(USART_RX_vect) {
 
     conv.putch(ch);
 }
+#endif
 
 ISR(PCINT0_vect) {
 }
 ISR(PCINT1_vect) {
 }
 ISR(PCINT2_vect) {
+}
+
+#include "Sensorino.h"
+
+void Sensorino::die(const char *err) {
+    cli();
+    Serial.write("Panic");
+    if (err) {
+        Serial.write(" because: ");
+        Serial.write(err);
+    }
+    Serial.write("\nStopping\n");
+    /* TODO: also broadcast the same stuff over all radio channels, etc.? */
+    while (1);
 }
 
 /* vim: set sw=4 ts=4 et: */
