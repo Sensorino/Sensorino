@@ -77,8 +77,10 @@ void Base::loop() {
 
             /* Successfully converted to JSON */
             if (obj) {
-                /* FIXME this blocks */
                 char *str = aJson.print(obj);
+                aJson.deleteItem(obj);
+
+                /* FIXME this blocks */
                 Serial.write(str);
                 free(str);
             }
