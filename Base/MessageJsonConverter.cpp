@@ -7,6 +7,10 @@ static char lower(char chr) {
         return chr - 'A' + 'a';
 }
 
+static bool isEnumType(DataType t) {
+    return t == DATATYPE;
+}
+
 aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
     aJsonObject *obj = aJson.createObject();
 
@@ -49,6 +53,7 @@ aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
         char name[50];
         CodingType coding = (CodingType) -1;
         aJsonObject *parent, *child;
+        const char *enumId = NULL;
 
         m.iterGetTypeValue(i, &t, &val);
         if (t == (DataType) -1)
@@ -63,7 +68,18 @@ aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
             child = aJson.createItem((char) *(int *) val);
             break;
         case intCoding:
-            child = aJson.createItem(*(int *) val);
+            if (isEnumType(t))
+                switch (t) {
+                case DATATYPE:
+                    enumId = Message::dataTypeToString(
+                            (DataType) *(int *) val, NULL);
+                    break;
+                }
+
+            if (enumId)
+                child = aJson.createItem(enumId);
+            else
+                child = aJson.createItem(*(int *) val);
             break;
         case floatCoding:
             child = aJson.createItem((double) *(float *) val);
@@ -120,10 +136,28 @@ static int messageAddElem(Message *msg, const char *name, aJsonObject *obj) {
         break;
 
     case intCoding:
-        if (obj->type != aJson_Int)
+        if (isEnumType(t)) {
+            DataType valuetype;
+
+            switch (t) {
+            case DATATYPE:
+                if (obj->type == aJson_String)
+                    valuetype = Message::stringToDataType(obj->valuestring);
+                else if (obj->type == aJson_Int)
+                    valuetype = (DataType) obj->valueint;
+                else
+                    return -1;
+                if (valuetype == (DataType) __INT_MAX__)
+                    return -1;
+
+                msg->addDataTypeValue(valuetype);
+                break;
+            }
+        } else if (obj->type == aJson_Int)
+            msg->addIntValue(t, obj->valueint);
+        else
             return -1;
 
-        msg->addIntValue(t, obj->valueint);
         break;
 
     case floatCoding:
