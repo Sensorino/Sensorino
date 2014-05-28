@@ -283,7 +283,7 @@ void Message::iterAdvance(Message::iter &i) {
     if (i > rawLen - 3)
         i = 0;
     else {
-        if (raw[i++] != extendedType)
+        if (raw[i++] == extendedType)
            i++;
         int len = raw[i++];
         i += len;
@@ -295,6 +295,7 @@ void Message::iterAdvance(Message::iter &i) {
 void Message::iterGetTypeValue(Message::iter i, DataType *type, void *val) {
     DataType t;
 
+    /* Read type */
     if (raw[i++] != extendedType) {
         *type = (DataType) -1;
         return;
@@ -304,6 +305,10 @@ void Message::iterGetTypeValue(Message::iter i, DataType *type, void *val) {
     if (type)
         *type = t;
 
+    /* Skip length.  TODO: multiple values in a TLV */
+    i++;
+
+    /* Read value */
     if (val) {
         if (BOOL_TYPE(t))
             *(int *) val = raw[i] != 0;
