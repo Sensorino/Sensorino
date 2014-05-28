@@ -56,6 +56,8 @@ Sensorino::Sensorino(int noSM) {
     if (!noSM)
         new ServiceManagerService();
 
+    radioManager->init();
+
     PCMSK0 = 0;
     PCMSK1 = 0;
     PCMSK2 = 0;

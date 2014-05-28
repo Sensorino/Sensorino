@@ -29,6 +29,8 @@ void Base::setup() {
 
     Serial.begin(115200);
 
+    radioManager.init();
+
     PCMSK0 = 0;
     PCMSK1 = 0;
     PCMSK2 = 0;
