@@ -1,5 +1,5 @@
-#include <SPI.h>
-#include <RH_NRF24.h>
+//#include <SPI.h>
+//#include <RH_NRF24.h>
 #include <Sensorino.h>
 #include <RelayService.h>
 #include <Timers.h>

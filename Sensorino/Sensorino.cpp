@@ -1,11 +1,13 @@
-#include <RHReliableDatagram.h>
+#include <Arduino.h>
+#include "mini-radiohead.h"
+//#include <RHReliableDatagram.h>
 #if (RH_PLATFORM == RH_PLATFORM_SIMULATOR) 
  // Simulate the sketch on Linux
  #include <MockArduino.h>
  #include <RHutil/simulator.h>
  #include <Dummy.h>
 #else
- #include <RH_NRF24.h>
+ //#include <RH_NRF24.h>
 #endif
 
 #if (RH_PLATFORM == RH_PLATFORM_SIMULATOR)
@@ -18,7 +20,6 @@
 #else
   #define MAX_MESSAGE_LEN RH_NRF24_MAX_MESSAGE_LEN
 #endif
-
 
 #include "Sensorino.h"
 #include "Message.h"

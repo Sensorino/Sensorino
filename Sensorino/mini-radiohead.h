@@ -1,6 +1,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#define RH_PLATFORM_SIMULATOR 0
+#define RH_PLATFORM_ARDUINO 1
+#define RH_PLATFORM RH_PLATFORM_ARDUINO
+
 #define RH_NRF24_MAX_MESSAGE_LEN 28
 class RHGenericSPI;
 class RHGenericDriver {
