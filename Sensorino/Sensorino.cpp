@@ -53,11 +53,13 @@ Sensorino::Sensorino(int noSM) {
 
     sensorino = this;
 
+    /* Initialise the radio and put it in Rx mode */
+    radioManager->init();
+    radioOpDone();
+
     /* Create a Service Manager unless we were told not to */
     if (!noSM)
         new ServiceManagerService();
-
-    radioManager->init();
 
     PCMSK0 = 0;
     PCMSK1 = 0;
