@@ -167,7 +167,7 @@ static void nrf24_delay(void) {
 }
 
 /* Enable 16-bit CRC */
-#define CONFIG_VAL ((1 << MASK_RX_DR) | (1 << MASK_TX_DS) | \
+#define CONFIG_VAL ((1 << MASK_TX_DS) | \
 		(1 << MASK_MAX_RT) | (1 << CRCO) | (1 << EN_CRC))
 
 static int nrf24_init(void) {
