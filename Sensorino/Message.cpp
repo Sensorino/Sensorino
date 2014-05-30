@@ -12,7 +12,7 @@ const uint8_t floatType=9;
 const uint8_t charStringType=29;
 
 /* TODO: move to progmem */
-static struct TypeInfo {
+static const struct TypeInfo {
     DataType val;
     const char *name;
     CodingType coding;
@@ -23,8 +23,8 @@ DATATYPE_LIST_APPLY(TYPEINFO_INITIALISER)
     { (DataType) __INT_MAX__, NULL, (enum CodingType) -1 }, /* Sentinel */
 };
 
-static struct TypeInfo *getTypeInfo(DataType type) {
-    struct TypeInfo *i = typeTable;
+static const struct TypeInfo *getTypeInfo(DataType type) {
+    const struct TypeInfo *i = typeTable;
 
     while (type > i->val)
         i++;
@@ -33,7 +33,7 @@ static struct TypeInfo *getTypeInfo(DataType type) {
 }
 
 const char *Message::dataTypeToString(DataType type, CodingType *coding) {
-    struct TypeInfo *i = getTypeInfo(type);
+    const struct TypeInfo *i = getTypeInfo(type);
 
     if (coding && i)
         *coding = i->coding;
@@ -42,7 +42,7 @@ const char *Message::dataTypeToString(DataType type, CodingType *coding) {
 }
 
 DataType Message::stringToDataType(const char *str) {
-    struct TypeInfo *i = typeTable;
+    const struct TypeInfo *i = typeTable;
 
     while (i->val < __INT_MAX__ && strcasecmp(str, i->name))
         i++;
