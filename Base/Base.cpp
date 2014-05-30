@@ -71,8 +71,9 @@ void Base::loop() {
         /* We've received and parsed a new JSON message */
         if (conv.obj) {
             Message *msg = NULL;
+            bool jsonOk = !checkJsonError(conv.obj);
 
-            if (!checkJsonError(conv.obj))
+            if (jsonOk)
                 msg = MessageJsonConverter::jsonToMessage(*conv.obj);
             aJson.deleteItem(conv.obj);
             conv.obj = NULL;
@@ -83,7 +84,7 @@ void Base::loop() {
                         msg->getRawLength(), msg->getDstAddress()))
                     Serial.write("{\"error\":\"xmitError\"}");
                 delete msg;
-            } else
+            } else if (jsonOk)
                 Serial.write("{\"error\":\"structError\"}");
         }
     }
