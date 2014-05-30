@@ -1,9 +1,20 @@
+#include <Arduino.h>
+
 #include "Service.h"
 
 class SwitchService : public Service {
 public:
     SwitchService(int id, int pin) : Service(id), pin(pin) {
-        pinMode(pin, INPUT);
+        /* Always enable the pull-up on the switch's GPIO.  If not
+         * needed it probably won't hurt, but if this is a wall
+         * switch it most likely can only open and close the circuit
+         * so we need either a pull-up or a pull-down to properly
+         * detect the change.
+         * Since the Atmega offers no pull-downs, we always use the
+         * pull-up.  This implies that it's best to connect the
+         * switch between the GPIO and the Ground.
+         */
+        pinMode(pin, INPUT_PULLUP);
 
         sensorino->attachGPIOInterrupt(pin, pinHandler, this);
     }
