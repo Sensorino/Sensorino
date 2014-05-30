@@ -1,7 +1,7 @@
 #include <string.h>
 
 #include "Message.h"
-#include "Sensorino.h"
+#include "../Sensorino/Sensorino.h"
 
 // https://en.wikipedia.org/wiki/Basic_Encoding_Rules#BER_encoding
 const uint8_t extendedType=0b00011111;

@@ -128,7 +128,7 @@ ISR(PCINT1_vect) {
 ISR(PCINT2_vect) {
 }
 
-#include "Sensorino.h"
+#include "../Sensorino/Sensorino.h"
 
 void Sensorino::die(const char *err) {
     cli();
