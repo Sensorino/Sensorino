@@ -10,6 +10,7 @@
 #define SCK_PIN		(1 << 5)
 #define MISO_PIN	(1 << 4)
 #define MOSI_PIN	(1 << 3)
+#define SS_PIN		(1 << 2)
 
 static void spi_mode(uint8_t mode) {
 	/* Enable SPI master with configuration byte specified */
@@ -25,7 +26,11 @@ static void spi_init(void) {
 	SPI_DDR |= SCK_PIN | MOSI_PIN;
 	SPI_DDR &= ~MISO_PIN;
 
-	/* Enable SPI Master, MSB, SPI mode 0, FOSC/4 */
+	/* At least temporarily SS must also be configured as output before
+	 * setting MSTR or else the SPI logic may immediately force it clear */
+	SPI_DDR |= SS_PIN;
+
+	/* Enable SPI Master, MSB, SPI mode 0, FOSC/2 */
 	spi_mode(0);
 }
 

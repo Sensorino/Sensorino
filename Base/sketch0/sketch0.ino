@@ -1,6 +1,6 @@
 #include <aJSON.h>
 //#include <RadioHead.h>
-#include <SPI.h>
+//#include <SPI.h>
 #include <Base.h>
 
 void setup() {

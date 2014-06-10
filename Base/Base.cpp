@@ -6,9 +6,13 @@
 #include "MessageJsonConverter.h"
 
 /* TODO: make these configurable */
-#define CONFIG_CSN_PIN  14
+#define CONFIG_CSN_PIN  10
+#define CONFIG_INTR_PIN 14
 #define CONFIG_CE_PIN   15
-#define CONFIG_INTR_PIN 10
+
+#if (CONFIG_INTR_PIN == SS)
+# error Please rewire your nRF24 interrupt to a dfferent pin
+#endif
 
 /* TODO: put all the utils in a header */
 #ifndef unlikely

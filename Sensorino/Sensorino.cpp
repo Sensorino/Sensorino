@@ -27,9 +27,9 @@
 #include "ServiceManagerService.h"
 
 /* TODO: make these configurable */
-#define CONFIG_CSN_PIN  14
+#define CONFIG_CSN_PIN  10
+#define CONFIG_INTR_PIN 14
 #define CONFIG_CE_PIN   15
-#define CONFIG_INTR_PIN 10
 
 Sensorino::Sensorino(int noSM) {
     if (sensorino)
