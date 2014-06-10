@@ -278,8 +278,7 @@ static uint8_t nrf24_rx_data_avail(void) {
 static void nrf24_rx_read(uint8_t *buf, uint8_t *pkt_len) {
 	uint8_t len;
 
-	nrf24_write_reg(STATUS, 1 << RX_DR);
-
+	/* Order of operations as given in note C on page 59 */
 	len = nrf24_rx_data_avail();
 	*pkt_len = len;
 
@@ -290,6 +289,8 @@ static void nrf24_rx_read(uint8_t *buf, uint8_t *pkt_len) {
 		*buf ++ = spi_transfer(0);
 
 	nrf24_csn(1);
+
+	nrf24_write_reg(STATUS, 1 << RX_DR);
 }
 
 static void nrf24_tx(uint8_t *buf, uint8_t len) {
@@ -403,7 +404,9 @@ bool RHReliableDatagram::init() {
 
 void RHReliableDatagram::setThisAddress(uint8_t new_addr) {
 	addr = new_addr;
+	nrf24_idle_mode(1);
 	update_rx_addr(addr);
+	nrf24_rx_mode();
 }
 
 bool RHReliableDatagram::available() {
