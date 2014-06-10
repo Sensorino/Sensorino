@@ -126,12 +126,9 @@ ISR(USART_RX_vect) {
 }
 #endif
 
-ISR(PCINT0_vect) {
-}
-ISR(PCINT1_vect) {
-}
-ISR(PCINT2_vect) {
-}
+EMPTY_INTERRUPT(PCINT0_vect);
+ISR(PCINT1_vect, ISR_ALIASOF(PCINT0_vect));
+ISR(PCINT2_vect, ISR_ALIASOF(PCINT0_vect));
 
 #include "../Sensorino/Sensorino.h"
 
