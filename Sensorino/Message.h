@@ -115,10 +115,6 @@ class Message{
         void addDataTypeValue(DataType t);
         void addBoolValue(DataType t, int value);
 
-        // there should be no reason to do this, but I need to test
-        void addFloat(float value);
-        void addInt(int value);
-
         /* Accessors for types encoded as floats */
 #define _glue(x, y)  x##y
 #define glue(...) _glue(__VA_ARGS__)

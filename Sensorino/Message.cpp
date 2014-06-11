@@ -185,59 +185,49 @@ int Message::find(DataType t, int num, void *value) {
     return 0;
 }
 
-int _addInt(uint8_t *buffer, int value){
-    // Value
-    for (int i=0;i<sizeof(int);i++){
-        buffer[sizeof(int)-1-i]=(value>>i*8)&0xFF;
+#define likely(x)	__builtin_expect((x), 1)
+#define unlikely(x)	__builtin_expect((x), 0)
+
+void Message::checkIntegrity(void) {
+    if (unlikely(rawLen > HEADERS_LENGTH + PAYLOAD_LENGTH)) {
+        /* We should stop adding stuff or we'll crash */
+        Sensorino::die("msg payload overflowed");
     }
-    return sizeof(int);
+}
+
+uint8_t appendIntValuePart(uint8_t *buffer, int value){
+    buffer[1] = value >> 0;
+    buffer[0] = value >> 8;
+
+    return 2;
 }
 
 void Message::addIntValue(DataType t, int value){
-    // Type
-    raw[rawLen++]=extendedType; // extended type
-    raw[rawLen++]=t;
+    /* Type */
+    raw[rawLen++] = extendedType;
+    raw[rawLen++] = t;
 
-    // Len + Value
-    int length=_addInt(raw+rawLen+1, value);
-    raw[rawLen]=length;
-    rawLen+=1+length;
+    /* Len + Value */
+    int length = appendIntValuePart(raw + rawLen + 1, value);
+    raw[rawLen] = length;
+    rawLen += 1 + length;
 
     checkIntegrity();
 }
 
-
-inline void Message::checkIntegrity(){
-    if (rawLen> HEADERS_LENGTH + PAYLOAD_LENGTH){
-        //We should stop adding stuff or we'll crash
-        Sensorino::die("constructing message bigger that max size");
-    }
-}
-
-
-
-void Message::addInt(int value){
-    // Type
-    raw[rawLen++]=intType;
-    // Len + Value
-    int length=_addInt(raw+rawLen+1, value);
-    raw[rawLen]=length;
-    rawLen+=1+length;
-}
-
 void Message::addFloatValue(DataType t, float value){
-    // Type
-    raw[rawLen++]=extendedType; // extended type
-    raw[rawLen++]=t;
+    /* Type */
+    raw[rawLen++] = extendedType;
+    raw[rawLen++] = t;
 
-    raw[rawLen++]=4;
+    /* Len + Value */
+    raw[rawLen++] = 4;
 
-    unsigned long d = *(unsigned long *)&value;
-    raw[rawLen++]=d & 0x00FF;
-    raw[rawLen++]=(d & 0xFF00) >> 8;
-    raw[rawLen++]=(d & 0xFF0000) >> 16;
-    raw[rawLen++]=(d & 0xFF000000) >> 24;
-
+    uint32_t d = *(uint32_t *) &value;
+    raw[rawLen++] = d >> 0;
+    raw[rawLen++] = d >> 8;
+    raw[rawLen++] = d >> 16;
+    raw[rawLen++] = d >> 24;
 
     checkIntegrity();
 }
@@ -247,13 +237,13 @@ void Message::addDataTypeValue(DataType t){
 }
 
 void Message::addBoolValue(DataType t, int value){
-    // Type
-    raw[rawLen++]=extendedType; // extended type
-    raw[rawLen++]=t;
+    /* Type */
+    raw[rawLen++] = extendedType;
+    raw[rawLen++] = t;
 
-    // Len + Value
-    raw[rawLen++]=1;
-    raw[rawLen++]=!!value;
+    /* Len + Value */
+    raw[rawLen++] = 1;
+    raw[rawLen++] = !!value;
 
     checkIntegrity();
 }
