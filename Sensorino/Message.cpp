@@ -196,14 +196,17 @@ int Message::find(DataType t, int num, void *value) {
             float_val |= raw[pos++] << 24;
             *(uint32_t *) value = float_val;
         } else if (INT_TYPE(t)) {
-            uint16_t int_val;
+            int int_val;
 
-            if (CHECK_LENGTH(2))
+            if (len < 1 || CHECK_LENGTH(len))
                 return 0;
 
-            int_val = raw[pos++] << 8;
-            int_val |= raw[pos];
-            *(int *) value = (int16_t) int_val;
+            int_val = (int8_t) raw[pos++]; /* Sign-extend */
+            while (--len) {
+                int_val <<= 8;
+                int_val |= raw[pos++];
+            }
+            *(int *) value = int_val;
         }
 
         return 1;
@@ -223,28 +226,39 @@ void Message::checkIntegrity(void) {
 }
 
 static uint8_t appendTypePart(uint8_t *buffer, DataType t) {
-    unsigned int tval = (unsigned int) (int) t;
-    uint8_t len, *ptr = buffer;
+    unsigned int tval = ((unsigned int) (int) t) >> 7;
+    uint8_t len, ret;
 
-    for (len = 0; tval >> (len + 7); len += 7);
+    for (len = 1; tval; len++, tval >>= 7);
+    ret = len;
 
 #ifdef BER_COMPAT
-    *ptr++ = extendedType;
+    *buffer++ = extendedType;
+    ret++;
 #endif
-    while (len) {
-        *ptr++ = 0x80 | (tval >> len);
-        len -= 7;
+    tval = (unsigned int) (int) t;
+    buffer[--len] = tval & 0x7f;
+    while (len--) {
+        tval >>= 7;
+        buffer[len] = 0x80 | tval;
     }
-    *ptr++ = tval & 0x7f;
 
-    return ptr - buffer;
+    return ret;
 }
 
 static uint8_t appendIntValuePart(uint8_t *buffer, int value) {
-    buffer[1] = value >> 0;
-    buffer[0] = value >> 8;
+    uint8_t len, ret;
+    int i = value >> 7;
 
-    return 2;
+    for (len = 1; i && ~i; len++, i >>= 8);
+    ret = len;
+
+    while (len--) {
+        buffer[len] = value;
+        value >>= 8;
+    }
+
+    return ret;
 }
 
 void Message::addIntValue(DataType t, int value){
@@ -275,11 +289,11 @@ void Message::addFloatValue(DataType t, float value){
     checkIntegrity();
 }
 
-void Message::addDataTypeValue(DataType t){
+void Message::addDataTypeValue(DataType t) {
     addIntValue(DATATYPE, t);
 }
 
-void Message::addBoolValue(DataType t, int value){
+void Message::addBoolValue(DataType t, int value) {
     /* Type */
     rawLen += appendTypePart(raw + rawLen, t);
 
@@ -322,6 +336,7 @@ void Message::iterAdvance(Message::iter &i) {
             while ((raw[i++] & 0x80) && i < rawLen - 2);
         }
         int len = raw[i++];
+        /* TODO: "long" and "indefinite" forms support */
         if (len + i >= rawLen)
             i = 0;
         else
@@ -332,6 +347,7 @@ void Message::iterAdvance(Message::iter &i) {
 void Message::iterGetTypeValue(Message::iter i, DataType *type, void *val) {
     DataType t;
     unsigned int tval = 0;
+    uint8_t len;
 
     /* Read type */
 #ifdef BER_COMPAT
@@ -350,8 +366,8 @@ void Message::iterGetTypeValue(Message::iter i, DataType *type, void *val) {
     if (type)
         *type = t;
 
-    /* Skip length.  TODO: multiple values in a TLV */
-    i++;
+    /* Skip length */
+    len = raw[i++];
 
     /* Read value */
     if (val) {
@@ -366,10 +382,13 @@ void Message::iterGetTypeValue(Message::iter i, DataType *type, void *val) {
             float_val |= raw[i++] << 24;
             *(uint32_t *) val = float_val;
         } else if (INT_TYPE(t)) {
-            uint16_t int_val;
+            int int_val;
 
-            int_val = raw[i++] << 8;
-            int_val |= raw[i];
+            int_val = (int8_t) raw[i++]; /* Sign-extend */
+            while (--len && i < rawLen) {
+                int_val <<= 8;
+                int_val |= raw[i++];
+            }
 
             *(int *) val = int_val;
         }
