@@ -234,9 +234,9 @@ void Sensorino::die(const char *err) {
 /* Globals.. can be moved to Sensorino as statics */
 static void (*gpio_handler[NUM_DIGITAL_PINS])(int pin, void *data);
 static void *gpio_data[NUM_DIGITAL_PINS];
-static uint8_t port_val[3];
+static volatile uint8_t port_val[3];
 /* Could get rid of this at some cost... */
-static uint8_t pcint_to_gpio[24] = {
+static volatile uint8_t pcint_to_gpio[24] = {
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -246,7 +246,8 @@ static void SensorinoGPIOISR(int port, uint8_t new_val) {
     uint8_t diff = port_val[port] ^ new_val;
     port_val[port] = new_val;
 
-    for (uint8_t *gpio = &pcint_to_gpio[port << 3]; diff; diff >>= 1, gpio++)
+    for (volatile uint8_t *gpio = &pcint_to_gpio[port << 3]; diff;
+            diff >>= 1, gpio++)
         if ((diff & 1) && ~*gpio)
             gpio_handler[*gpio](*gpio, gpio_data[*gpio]);
 }
