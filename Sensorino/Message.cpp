@@ -13,7 +13,7 @@
  * the Class, P/C and tag number 31 since all of our payload elements are
  * non-universal types and the first byte is always the same anyway.
  */
-#define BER_COMPAT
+//#define BER_COMPAT
 
 #ifdef BER_COMPAT
 enum BERClass {
