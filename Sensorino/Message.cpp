@@ -1,15 +1,21 @@
+/*
+ * Radio message format handling utilities class.  Sensorino radio
+ * messages consist of a custom header and a BER TLV-formatted payload.
+ * https://en.wikipedia.org/wiki/Basic_Encoding_Rules#BER_encoding
+ */
 #include <string.h>
 
 #include "Message.h"
 #include "../Sensorino/Sensorino.h"
 
-// https://en.wikipedia.org/wiki/Basic_Encoding_Rules#BER_encoding
-const uint8_t extendedType=0b00011111;
-const uint8_t booleanType=1;
-const uint8_t intType=2;
-const uint8_t nullType=5;
-const uint8_t floatType=9;
-const uint8_t charStringType=29;
+enum BERClass {
+    BER_UNIVERSAL = 0,
+    BER_APPLICATION = 1 << 6,
+    BER_CONTEXT_SPECIFIC = 2 << 6,
+    BER_PRIVATE = 3 << 6,
+};
+
+const uint8_t extendedType = BER_APPLICATION | 0b011111;
 
 /* TODO: move to progmem */
 static const struct TypeInfo {
