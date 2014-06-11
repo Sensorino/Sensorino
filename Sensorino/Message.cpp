@@ -8,6 +8,14 @@
 #include "Message.h"
 #include "../Sensorino/Sensorino.h"
 
+/* Select if we want full BER compatibility in the Tag/Length/Value encoding
+ * at the cost of bigger payloads.  If BER compatibility is disabled we skip
+ * the Class, P/C and tag number 31 since all of our payload elements are
+ * non-universal types and the first byte is always the same anyway.
+ */
+#define BER_COMPAT
+
+#ifdef BER_COMPAT
 enum BERClass {
     BER_UNIVERSAL = 0,
     BER_APPLICATION = 1 << 6,
@@ -16,6 +24,7 @@ enum BERClass {
 };
 
 const uint8_t extendedType = BER_APPLICATION | 0b011111;
+#endif
 
 /* TODO: move to progmem */
 static const struct TypeInfo {
@@ -141,9 +150,21 @@ int Message::getRawLength(void) {
 
 int Message::find(DataType t, int num, void *value) {
     int pos = HEADERS_LENGTH, len;
+    unsigned int tval;
 
     while (pos < rawLen - 3) {
-        if (raw[pos++] != extendedType || raw[pos++] != (int) t || num--) {
+        tval = -1;
+#ifdef BER_COMPAT
+        if (raw[pos++] == extendedType)
+#endif
+        {
+            while (raw[pos] & 0x80 && pos < rawLen - 3) {
+                tval |= raw[pos++] & 0x7f;
+                tval <<= 7;
+            }
+            tval |= raw[pos++];
+        }
+        if ((DataType) tval != t || num--) {
             /* Skip this TLV */
             len = raw[pos++];
             pos += len;
@@ -201,7 +222,25 @@ void Message::checkIntegrity(void) {
     }
 }
 
-uint8_t appendIntValuePart(uint8_t *buffer, int value){
+static uint8_t appendTypePart(uint8_t *buffer, DataType t) {
+    unsigned int tval = (unsigned int) (int) t;
+    uint8_t len, *ptr = buffer;
+
+    for (len = 0; tval >> (len + 7); len += 7);
+
+#ifdef BER_COMPAT
+    *ptr++ = extendedType;
+#endif
+    while (len) {
+        *ptr++ = 0x80 | (tval >> len);
+        len -= 7;
+    }
+    *ptr++ = tval & 0x7f;
+
+    return ptr - buffer;
+}
+
+static uint8_t appendIntValuePart(uint8_t *buffer, int value) {
     buffer[1] = value >> 0;
     buffer[0] = value >> 8;
 
@@ -210,8 +249,7 @@ uint8_t appendIntValuePart(uint8_t *buffer, int value){
 
 void Message::addIntValue(DataType t, int value){
     /* Type */
-    raw[rawLen++] = extendedType;
-    raw[rawLen++] = t;
+    rawLen += appendTypePart(raw + rawLen, t);
 
     /* Len + Value */
     int length = appendIntValuePart(raw + rawLen + 1, value);
@@ -223,8 +261,7 @@ void Message::addIntValue(DataType t, int value){
 
 void Message::addFloatValue(DataType t, float value){
     /* Type */
-    raw[rawLen++] = extendedType;
-    raw[rawLen++] = t;
+    rawLen += appendTypePart(raw + rawLen, t);
 
     /* Len + Value */
     raw[rawLen++] = 4;
@@ -244,8 +281,7 @@ void Message::addDataTypeValue(DataType t){
 
 void Message::addBoolValue(DataType t, int value){
     /* Type */
-    raw[rawLen++] = extendedType;
-    raw[rawLen++] = t;
+    rawLen += appendTypePart(raw + rawLen, t);
 
     /* Len + Value */
     raw[rawLen++] = 1;
@@ -279,25 +315,38 @@ void Message::iterAdvance(Message::iter &i) {
     if (i > rawLen - 3)
         i = 0;
     else {
-        if (raw[i++] == extendedType)
-           i++;
+#ifdef BER_COMPAT
+        if ((raw[i++] & 31) == (extendedType & 31))
+#endif
+        {
+            while ((raw[i++] & 0x80) && i < rawLen - 2);
+        }
         int len = raw[i++];
-        i += len;
-        if (i >= rawLen)
+        if (len + i >= rawLen)
             i = 0;
+        else
+            i += len;
     }
 }
 
 void Message::iterGetTypeValue(Message::iter i, DataType *type, void *val) {
     DataType t;
+    unsigned int tval = 0;
 
     /* Read type */
+#ifdef BER_COMPAT
     if (raw[i++] != extendedType) {
         *type = (DataType) -1;
         return;
     }
+#endif
 
-    t = (DataType) raw[i++];
+    while ((raw[i] & 0x80) && i < rawLen - 2) {
+        tval |= raw[i++] & 0x7f;
+        tval <<= 7;
+    }
+    tval |= raw[i++];
+    t = (DataType) tval;
     if (type)
         *type = t;
 
