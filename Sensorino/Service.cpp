@@ -49,7 +49,7 @@ Message *Service::startBaseMessage(MessageType type, Message *orig) {
     Message *msg;
 
     if (orig)
-        dst = orig->getDstAddress();
+        dst = orig->getSrcAddress();
 
     msg = new Message(src, dst);
     msg->setType(type);
