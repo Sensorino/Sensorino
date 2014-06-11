@@ -24,10 +24,10 @@ void watchdogConfig(uint8_t x) {
     WDTCSR = x;
 }
 
-MessageJsonConverter conv;
+static MessageJsonConverter conv;
 
-RH_NRF24 radio(CONFIG_CE_PIN, CONFIG_CSN_PIN);
-RHReliableDatagram radioManager(radio, 0);
+static RH_NRF24 radio(CONFIG_CE_PIN, CONFIG_CSN_PIN);
+static RHReliableDatagram radioManager(radio, 0);
 
 void Base::setup() {
     watchdogConfig(0);
@@ -66,6 +66,8 @@ static bool checkJsonError(aJsonObject *obj) {
 }
 
 void Base::loop() {
+    static aJsonStream aJsonSerial(&Serial);
+
     /* Wait until something happens on UART or radio */
     __asm__ volatile ("sleep");
 
@@ -103,12 +105,9 @@ void Base::loop() {
 
             /* Successfully converted to JSON */
             if (obj) {
-                char *str = aJson.print(obj);
-                aJson.deleteItem(obj);
-
                 /* FIXME this blocks */
-                Serial.write(str);
-                free(str);
+                aJson.print(obj, &aJsonSerial);
+                aJson.deleteItem(obj);
             }
         }
     }
