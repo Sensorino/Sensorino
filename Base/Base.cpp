@@ -131,14 +131,21 @@ ISR(PCINT2_vect, ISR_ALIASOF(PCINT0_vect));
 
 #include "../Sensorino/Sensorino.h"
 
-void Sensorino::die(const char *err) {
+void Sensorino::die(const prog_char *err) {
     cli();
-    Serial.write("Panic");
-    if (err) {
-        Serial.write(" because: ");
-        Serial.write(err);
+    Serial.begin(115200);
+#define pgmWrite(stream, string) \
+    { \
+        char buf[strlen_P(string) + 1]; \
+        strcpy_P(buf, string); \
+        stream.write(buf); \
     }
-    Serial.write("\nStopping\n");
+    pgmWrite(Serial, PSTR("Panic"));
+    if (err) {
+        pgmWrite(Serial, PSTR(" because: "));
+        pgmWrite(Serial, err);
+    }
+    pgmWrite(Serial, PSTR("\nStopping\n"));
     /* TODO: also broadcast the same stuff over all radio channels, etc.? */
     while (1);
 }

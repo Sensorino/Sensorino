@@ -33,7 +33,7 @@
 
 Sensorino::Sensorino(int noSM) {
     if (sensorino)
-        Sensorino::die("For now only one allowed");
+        die(PSTR("For now only one allowed"));
 
     /* TODO: make the constructor accept a Config object, which will
      * provide default config, including default address and some service
@@ -170,10 +170,10 @@ uint8_t Sensorino::getAddress() {
 
 void Sensorino::addService(Service *s) {
     if (servicesNum >= MAX_SERVICES)
-        die("MAX_SERVICES reached");
+        die(PSTR("MAX_SERVICES reached"));
 
     if (getServiceById(s->getId()))
-        die("Duplicate service ID");
+        die(PSTR("Duplicate service ID"));
 
     services[servicesNum++] = s;
 }
@@ -186,7 +186,7 @@ void Sensorino::deleteService(Service *s) {
             break;
 
     if (i >= servicesNum)
-        die("deleteService: not found");
+        die(PSTR("deleteService: not found"));
 
     servicesNum--;
     for (; i < servicesNum; i++)
@@ -205,15 +205,21 @@ Service *Sensorino::getServiceByNum(int num) {
     return num < servicesNum ? services[num] : NULL;
 }
 
-void Sensorino::die(const char *err) {
+void Sensorino::die(const prog_char *err) {
     cli();
     Serial.begin(115200);
-    Serial.write("Panic");
-    if (err) {
-        Serial.write(" because: ");
-        Serial.write(err);
+#define pgmWrite(stream, string) \
+    { \
+        char buf[strlen_P(string) + 1]; \
+        strcpy_P(buf, string); \
+        stream.write(buf); \
     }
-    Serial.write("\nStopping\n");
+    pgmWrite(Serial, PSTR("Panic"));
+    if (err) {
+        pgmWrite(Serial, PSTR(" because: "));
+        pgmWrite(Serial, err);
+    }
+    pgmWrite(Serial, PSTR("\nStopping\n"));
     /* TODO: also broadcast the same stuff over all radio channels, etc.? */
     #if (RH_PLATFORM == RH_PLATFORM_SIMULATOR)
         exit(2);
@@ -271,7 +277,7 @@ ISR(PCINT2_vect) {
 
 static void doAttachGPIOInterrupt(int pin, void *handler, int obj) {
     if (pin >= NUM_DIGITAL_PINS)
-        Sensorino::die("Bad pin number");
+        Sensorino::die(PSTR("Bad pin number"));
 
     int pcint = (digitalPinToPCICRbit(pin) << 3) | digitalPinToPCMSKbit(pin);
 

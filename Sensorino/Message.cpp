@@ -233,7 +233,7 @@ int Message::find(DataType t, int num, void *value) {
 void Message::checkIntegrity(void) {
     if (unlikely(rawLen > HEADERS_LENGTH + PAYLOAD_LENGTH)) {
         /* We should stop adding stuff or we'll crash */
-        Sensorino::die("msg payload overflowed");
+        Sensorino::die(PSTR("Message payload too big"));
     }
 }
 

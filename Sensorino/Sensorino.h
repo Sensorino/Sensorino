@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <avr/pgmspace.h>
 
 // Maximum number of instantiable base services
 #define MAX_SERVICES 20
@@ -33,7 +34,7 @@ class Sensorino {
         Service *getServiceById(int id);
         Service *getServiceByNum(int num);
 
-        static void die(const char *err = NULL) __attribute__((noreturn));
+        static void die(const prog_char *err = NULL) __attribute__((noreturn));
 
         /* Since the Atmega only has one IRQ line per port (8 GPIOs)
          * this function lets a Service handle individual GPIO interrupts
