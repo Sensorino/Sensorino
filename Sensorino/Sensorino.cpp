@@ -138,7 +138,9 @@ bool Sensorino::sendMessage(Message &m) {
             m.getRawLength(), m.getDstAddress());
     radioBusy--;
 
-    radioOpDone();
+    if (!radioBusy)
+        radioOpDone();
+
     return ret;
 }
 
