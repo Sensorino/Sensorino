@@ -152,13 +152,15 @@ int Message::find(DataType t, int num, void *value) {
     int pos = HEADERS_LENGTH, len;
     unsigned int tval;
 
-    while (pos < rawLen - 3) {
-        tval = -1;
+    while (pos < rawLen - 2) {
 #ifdef BER_COMPAT
-        if (raw[pos++] == extendedType)
+        if (raw[pos++] != extendedType)
+            tval = -1;
+        else
 #endif
         {
-            while (raw[pos] & 0x80 && pos < rawLen - 3) {
+            tval = 0;
+            while (raw[pos] & 0x80 && pos < rawLen - 2) {
                 tval |= raw[pos++] & 0x7f;
                 tval <<= 7;
             }
