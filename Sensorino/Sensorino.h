@@ -55,11 +55,7 @@ class Sensorino {
         void radioCheckPacket(void);
         static void radioInterrupt(int pin);
 
-        #if (RH_PLATFORM != RH_PLATFORM_SIMULATOR)
-         static volatile bool radioBusy;
-        #else
-         static volatile uint8_t radioBusy;
-        #endif
+        static volatile uint8_t radioBusy;
 };
 
 #define attachObjGPIOInterrupt(pin, method) \

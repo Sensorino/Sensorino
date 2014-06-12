@@ -123,12 +123,7 @@ void Sensorino::radioInterrupt(int pin) {
     sensorino->radioOpDone();
 }
 
-#if (RH_PLATFORM == RH_PLATFORM_SIMULATOR)
- volatile uint8_t Sensorino::radioBusy = 0;
-#else
- volatile bool Sensorino::radioBusy = 0;
-#endif
-
+volatile uint8_t Sensorino::radioBusy = 0;
 
 bool Sensorino::sendMessage(Message &m) {
     bool ret;
