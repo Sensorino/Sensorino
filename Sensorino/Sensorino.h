@@ -11,8 +11,12 @@ class Service;
 class Message;
 struct RHReliableDatagram;
 
-class Sensorino
-{
+class GenIntrCallback {
+public:
+	virtual void call(int pin) = 0;
+};
+
+class Sensorino {
     public:
         Sensorino(int noSM = 0);
 
@@ -31,14 +35,13 @@ class Sensorino
 
         static void die(const char *err = NULL) __attribute__((noreturn));
 
-        /* TODO:
-         * Since the Atmega only has one IRQ line per port (8 GPIOs)
+        /* Since the Atmega only has one IRQ line per port (8 GPIOs)
          * this function lets a Service handle individual GPIO interrupts
          * by providing a group handler that calls individual handlers as
          * needed.
          */
-        void attachGPIOInterrupt(int pin, void (*handler)(int pin, void *data),
-                void *data);
+        void attachGPIOInterrupt(int pin, void (*handler)(int pin));
+        void attachGPIOInterrupt(int pin, GenIntrCallback *callback);
 
     private:
         uint8_t address;
@@ -50,13 +53,26 @@ class Sensorino
 
         void radioOpDone(void);
         void radioCheckPacket(void);
-        static void radioInterrupt(int pin, void *s);
+        static void radioInterrupt(int pin);
 
-        #if (RH_PLATFORM != RH_PLATFORM_SIMULATOR) 
+        #if (RH_PLATFORM != RH_PLATFORM_SIMULATOR)
          static volatile bool radioBusy;
         #else
          static volatile uint8_t radioBusy;
         #endif
+};
+
+#define attachObjGPIOInterrupt(pin, method) \
+	attachGPIOInterrupt(pin, new IntrCallback<typeof(*this)>(this, &method))
+
+template <typename T>
+class IntrCallback : public GenIntrCallback {
+	T *obj;
+	void (T::*method)(int);
+public:
+	IntrCallback(T *nobj, void (T::*nmethod)(int)) :
+        obj(nobj), method(nmethod) {}
+	void call(int pin) { (obj->*method)(pin); }
 };
 
 extern Sensorino *sensorino;

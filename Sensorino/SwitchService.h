@@ -16,7 +16,7 @@ public:
          */
         pinMode(pin, INPUT_PULLUP);
 
-        sensorino->attachGPIOInterrupt(pin, pinHandler, this);
+        sensorino->attachObjGPIOInterrupt(pin, SwitchService::pinHandler);
     }
 
 protected:
@@ -54,10 +54,8 @@ protected:
         err(message)->send();
     }
 
-    static void pinHandler(int pin, void *s) {
-        SwitchService *svc = (SwitchService *) s;
-
-        svc->publishSwitch();
+    void pinHandler(int pin) {
+        publishSwitch();
     }
 };
 /* vim: set sw=4 ts=4 et: */

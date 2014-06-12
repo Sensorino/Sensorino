@@ -68,7 +68,7 @@ Sensorino::Sensorino(int noSM) {
 
     /* Ready to go */
     pinMode(CONFIG_INTR_PIN, INPUT);
-    attachGPIOInterrupt(CONFIG_INTR_PIN, radioInterrupt, NULL);
+    attachGPIOInterrupt(CONFIG_INTR_PIN, radioInterrupt);
 
     sei();
 }
@@ -105,7 +105,7 @@ void Sensorino::radioCheckPacket(void) {
     radioBusy--;
 }
 
-void Sensorino::radioInterrupt(int pin, void *s) {
+void Sensorino::radioInterrupt(int pin) {
     /* Make sure the line is low since we're probably registered for
      * both edges.  The NRF24L01+ interrupt is active-low.
      */
@@ -235,8 +235,8 @@ void Sensorino::die(const char *err) {
 #endif
 
 /* Globals.. can be moved to Sensorino as statics */
-static void (*gpio_handler[NUM_DIGITAL_PINS])(int pin, void *data);
-static void *gpio_data[NUM_DIGITAL_PINS];
+static void *gpio_handler[NUM_DIGITAL_PINS];
+static uint64_t gpio_obj_mask;
 static volatile uint8_t port_val[3];
 /* Could get rid of this at some cost... */
 static volatile uint8_t pcint_to_gpio[24] = {
@@ -251,8 +251,15 @@ static void SensorinoGPIOISR(int port, uint8_t new_val) {
 
     for (volatile uint8_t *gpio = &pcint_to_gpio[port << 3]; diff;
             diff >>= 1, gpio++)
-        if ((diff & 1) && ~*gpio)
-            gpio_handler[*gpio](*gpio, gpio_data[*gpio]);
+        if ((diff & 1) && ~*gpio) {
+            if (gpio_obj_mask & (1 << *gpio)) {
+                GenIntrCallback *cb = (GenIntrCallback *) gpio_handler[*gpio];
+                cb->call(*gpio);
+            } else {
+                void (*handler)(int) = (void (*)(int)) gpio_handler[*gpio];
+                handler(*gpio);
+            }
+        }
 }
 
 ISR(PCINT0_vect) {
@@ -267,16 +274,18 @@ ISR(PCINT2_vect) {
     SensorinoGPIOISR(2, PIND);
 }
 
-void Sensorino::attachGPIOInterrupt(int pin,
-        void (*handler)(int pin, void *data), void *data) {
+static void doAttachGPIOInterrupt(int pin, void *handler, int obj) {
     if (pin >= NUM_DIGITAL_PINS)
-        die("Bad pin number");
+        Sensorino::die("Bad pin number");
 
     int pcint = (digitalPinToPCICRbit(pin) << 3) | digitalPinToPCMSKbit(pin);
 
     gpio_handler[pin] = handler;
-    gpio_data[pin] = data;
     pcint_to_gpio[pcint] = pin;
+    if (obj)
+        gpio_obj_mask |= (uint64_t) 1 << pin;
+    else
+        gpio_obj_mask &= ~((uint64_t) 1 << pin);
 
     /* Enable corresponding interrupt */
     port_val[digitalPinToPCICRbit(pin)] =
@@ -285,9 +294,16 @@ void Sensorino::attachGPIOInterrupt(int pin,
     *digitalPinToPCICR(pin) |= 1 << digitalPinToPCICRbit(pin);
 }
 #else
-void Sensorino::attachGPIOInterrupt(int pin,
-        void (*handler)(int pin, void *data), void *data) {}
+static void doAttachGPIOInterrupt(int pin, void *handler, int obj) {}
 #endif
+
+void Sensorino::attachGPIOInterrupt(int pin, void (*handler)(int pin)) {
+    doAttachGPIOInterrupt(pin, (void *) handler, 0);
+}
+
+void Sensorino::attachGPIOInterrupt(int pin, GenIntrCallback *callback) {
+    doAttachGPIOInterrupt(pin, callback, 1);
+}
 
 /* Potentially-temporary global single sensorino instance.  We can pass this
  * pointer around when calling service constructors later, for the moment
