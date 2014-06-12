@@ -4,6 +4,7 @@
  * https://en.wikipedia.org/wiki/Basic_Encoding_Rules#BER_encoding
  */
 #include <string.h>
+#include <avr/pgmspace.h>
 
 #include "Message.h"
 #include "../Sensorino/Sensorino.h"
@@ -26,25 +27,30 @@ enum BERClass {
 const uint8_t extendedType = BER_APPLICATION | 0b011111;
 #endif
 
-/* TODO: move to progmem */
 static const struct TypeInfo {
     DataType val;
     const char *name;
     CodingType coding;
-} typeTable[] = {
+} typeTable[] PROGMEM = {
 #define TYPEINFO_INITIALISER(intval, CAPS, Camel, coding) \
     { CAPS, #Camel, glue(coding, Coding) },
 DATATYPE_LIST_APPLY(TYPEINFO_INITIALISER)
     { (DataType) __INT_MAX__, NULL, (enum CodingType) -1 }, /* Sentinel */
 };
 
-static const struct TypeInfo *getTypeInfo(DataType type) {
-    const struct TypeInfo *i = typeTable;
+#define pgm_read_enum(addr) ((int) pgm_read_word(addr))
+#define pgm_read_cptr(addr) ((const char *) pgm_read_word(addr))
 
-    while (type > i->val)
+/* Note: non-threadsafe */
+static TypeInfo typeInfoBuf;
+static const struct TypeInfo *getTypeInfo(DataType type) {
+    const struct TypeInfo PROGMEM *i = typeTable;
+
+    while (type > pgm_read_enum(&i->val))
         i++;
 
-    return type == i->val ? i : NULL;
+    memcpy_P(&typeInfoBuf, i, sizeof(typeInfoBuf));
+    return type == typeInfoBuf.val ? &typeInfoBuf : NULL;
 }
 
 const char *Message::dataTypeToString(DataType type, CodingType *coding) {
@@ -57,12 +63,13 @@ const char *Message::dataTypeToString(DataType type, CodingType *coding) {
 }
 
 DataType Message::stringToDataType(const char *str) {
-    const struct TypeInfo *i = typeTable;
+    const struct TypeInfo PROGMEM *i = typeTable;
 
-    while (i->val < __INT_MAX__ && strcasecmp(str, i->name))
+    while (pgm_read_enum(&i->val) < __INT_MAX__ &&
+            strcasecmp(str, pgm_read_cptr(&i->name)))
         i++;
 
-    return i->val;
+    return (DataType) pgm_read_enum(&i->val);
 }
 
 uint8_t Message::staticId;
