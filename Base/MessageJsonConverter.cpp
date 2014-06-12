@@ -49,18 +49,18 @@ aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
     for (Message::iter i = m.begin(); i; m.iterAdvance(i)) {
         DataType t;
         uint32_t val;
-        const char *cname;
+        const prog_char *cname;
         char name[50];
         CodingType coding = (CodingType) -1;
         aJsonObject *parent, *child;
-        const char *enumId = NULL;
+        const prog_char *enumId = NULL;
 
         m.iterGetTypeValue(i, &t, &val);
         if (t == (DataType) -1)
             continue; /* TODO: Add a note in the JSON output */
 
-        cname = Message::dataTypeToString(t, &coding) ?: "Unknown";
-        strncpy(name, cname, sizeof(name));
+        cname = Message::dataTypeToString(t, &coding) ?: PSTR("Unknown");
+        strncpy_P(name, cname, sizeof(name));
         name[0] = lower(name[0]);
 
         switch (coding) {
@@ -76,9 +76,11 @@ aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
                     break;
                 }
 
-            if (enumId)
-                child = aJson.createItem(enumId);
-            else
+            if (enumId) {
+                char buf[50];
+                strncpy_P(buf, enumId, sizeof(buf));
+                child = aJson.createItem(buf);
+            } else
                 child = aJson.createItem(*(int *) &val);
             break;
         case floatCoding:

@@ -4,7 +4,6 @@
  * https://en.wikipedia.org/wiki/Basic_Encoding_Rules#BER_encoding
  */
 #include <string.h>
-#include <avr/pgmspace.h>
 
 #include "Message.h"
 #include "../Sensorino/Sensorino.h"
@@ -27,13 +26,17 @@ enum BERClass {
 const uint8_t extendedType = BER_APPLICATION | 0b011111;
 #endif
 
+#define NAME_PGM_STR(x, y, Camel, z) \
+    const char glue(Camel, _pgm_name)[] PROGMEM = #Camel;
+DATATYPE_LIST_APPLY(NAME_PGM_STR)
+
 static const struct TypeInfo {
     DataType val;
-    const char *name;
+    const prog_char *name;
     CodingType coding;
 } typeTable[] PROGMEM = {
 #define TYPEINFO_INITIALISER(intval, CAPS, Camel, coding) \
-    { CAPS, #Camel, glue(coding, Coding) },
+    { CAPS, glue(Camel, _pgm_name), glue(coding, Coding) },
 DATATYPE_LIST_APPLY(TYPEINFO_INITIALISER)
     { (DataType) __INT_MAX__, NULL, (enum CodingType) -1 }, /* Sentinel */
 };
@@ -66,7 +69,7 @@ DataType Message::stringToDataType(const char *str) {
     const struct TypeInfo PROGMEM *i = typeTable;
 
     while (pgm_read_enum(&i->val) < __INT_MAX__ &&
-            strcasecmp(str, pgm_read_cptr(&i->name)))
+            strcasecmp_P(str, pgm_read_cptr(&i->name)))
         i++;
 
     return (DataType) pgm_read_enum(&i->val);

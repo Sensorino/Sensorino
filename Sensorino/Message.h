@@ -5,8 +5,7 @@
 
 #include <stdint.h>
 #include <cstddef>
-
-
+#include <avr/pgmspace.h>
 
 enum MessageType {
     ERR     = 0,
@@ -71,8 +70,7 @@ enum CodingType {
 #define HEADERS_LENGTH 4
 #define PAYLOAD_LENGTH 20
 
-class Message{
-
+class Message {
     public:
         /* Use this when building a brand new message */
         Message(uint8_t srcAddress, uint8_t dstAddress);
@@ -80,7 +78,7 @@ class Message{
         /* Use this to grok a message you received */
         Message(const uint8_t *raw, int len);
 
-        static const char *dataTypeToString(DataType t,
+        static const prog_char *dataTypeToString(DataType t,
                 CodingType *coding = NULL);
         static DataType stringToDataType(const char *str);
 
