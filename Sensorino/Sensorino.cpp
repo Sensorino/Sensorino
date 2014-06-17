@@ -255,7 +255,7 @@ static void SensorinoGPIOISR(int port, uint8_t new_val) {
 
     for (volatile uint8_t *gpio = &pcint_to_gpio[port << 3]; diff;
             diff >>= 1, gpio++)
-        if ((diff & 1) && ~*gpio) {
+        if ((diff & 1) && (uint8_t) ~*gpio) {
             if (gpio_obj_mask & (1 << *gpio)) {
                 GenIntrCallback *cb = (GenIntrCallback *) gpio_handler[*gpio];
                 cb->call(*gpio);
