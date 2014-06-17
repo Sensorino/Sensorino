@@ -229,6 +229,9 @@ void Sensorino::die(const prog_char *err) {
 }
 
 #if (RH_PLATFORM != RH_PLATFORM_SIMULATOR)
+ISR(BADISR_vect) {
+    Sensorino::die(PSTR("BADISR"));
+}
 
 /* The numbers of ports and pins below are model specific */
 #ifndef __AVR_ATmega328P__
