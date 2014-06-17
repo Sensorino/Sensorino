@@ -68,7 +68,7 @@ enum CodingType {
 };
 
 #define HEADERS_LENGTH 4
-#define PAYLOAD_LENGTH 20
+#define PAYLOAD_LENGTH 80
 
 #define MAX_MESSAGE_SIZE (HEADERS_LENGTH + PAYLOAD_LENGTH)
 
