@@ -25,11 +25,15 @@
 #include "Message.h"
 #include "Service.h"
 #include "ServiceManagerService.h"
+#include "FragmentedDatagram.h"
 
 /* TODO: make these configurable */
 #define CONFIG_CSN_PIN  10
 #define CONFIG_INTR_PIN 14
 #define CONFIG_CE_PIN   15
+
+static FragmentedDatagram<RHReliableDatagram, RH_NRF24_MAX_MESSAGE_LEN,
+        MAX_MESSAGE_SIZE> *radioManager;
 
 Sensorino::Sensorino(int noSM) {
     if (sensorino)
@@ -47,7 +51,8 @@ Sensorino::Sensorino(int noSM) {
     #else
     RHGenericDriver *radio = new RH_NRF24(CONFIG_CE_PIN, CONFIG_CSN_PIN);
     #endif
-    radioManager = new RHReliableDatagram(*radio, address);
+    radioManager = new FragmentedDatagram<RHReliableDatagram,
+            RH_NRF24_MAX_MESSAGE_LEN, MAX_MESSAGE_SIZE>(*radio, address);
 
     servicesNum = 0;
 
@@ -97,11 +102,15 @@ void Sensorino::radioOpDone(void) {
 
 /* TODO: call this in a Bottom Half */
 void Sensorino::radioCheckPacket(void) {
-    uint8_t pkt[MAX_MESSAGE_LEN], len;
+    Message msg;
+    uint8_t len;
 
     radioBusy++;
-    if (radioManager->recvfromAck(pkt, &len, NULL, NULL, NULL, NULL))
-        handleMessage(pkt, len);
+    if (radioManager->recvfromAck(msg.getWriteBuffer(), &len,
+                NULL, NULL, NULL, NULL)) {
+        msg.writeLength(len);
+        handleMessage(msg);
+    }
     radioBusy--;
 }
 
@@ -139,8 +148,7 @@ bool Sensorino::sendMessage(Message &m) {
     return ret;
 }
 
-void Sensorino::handleMessage(const uint8_t *rawData, int len) {
-    Message msg(rawData, len);
+void Sensorino::handleMessage(Message &msg) {
     int svcId;
     Service *targetSvc = NULL;
 

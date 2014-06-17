@@ -4,7 +4,6 @@
 #include <RelayService.h>
 #include <SwitchService.h>
 #include <Timers.h>
-#include <aJSON.h>
 
 #define RELAY_GPIO 8
 #define SWITCH_GPIO 9

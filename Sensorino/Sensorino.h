@@ -10,7 +10,6 @@
 
 class Service;
 class Message;
-struct RHReliableDatagram;
 
 class GenIntrCallback {
 public:
@@ -21,7 +20,7 @@ class Sensorino {
     public:
         Sensorino(int noSM = 0);
 
-        void handleMessage(const uint8_t *rawData, int len);
+        void handleMessage(Message &m);
         void setAddress(uint8_t address);
         uint8_t getAddress();
         uint8_t getBaseAddress() { return 0; };
@@ -49,8 +48,6 @@ class Sensorino {
 
         Service *services[MAX_SERVICES];
         uint8_t servicesNum;
-
-        RHReliableDatagram *radioManager;
 
         void radioOpDone(void);
         void radioCheckPacket(void);
