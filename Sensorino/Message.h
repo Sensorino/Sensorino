@@ -80,6 +80,9 @@ class Message {
         /* Use this to grok a message you received */
         Message(const uint8_t *raw, int len);
 
+        /* Use this to obtain a receive buffer for a new message */
+        Message();
+
         static const prog_char *dataTypeToString(DataType t,
                 CodingType *coding = NULL);
         static DataType stringToDataType(const char *str);
@@ -102,6 +105,9 @@ class Message {
         /* Raw accessors */
         const uint8_t *getRawData(void);
         int getRawLength(void);
+
+        uint8_t *getWriteBuffer(void);
+        void writeLength(int len);
 
         /* Payload accessors */
 

@@ -102,6 +102,11 @@ Message::Message(const uint8_t *raw, int len) {
         Message::raw[len] = raw[len];
 }
 
+Message::Message() {
+    setType(GARBAGE);
+    rawLen = 0;
+}
+
 bool Message::send(void) {
     bool ret = sensorino->sendMessage(*this);
 
@@ -148,9 +153,16 @@ const uint8_t *Message::getRawData(void) {
     return raw;
 }
 
-
 int Message::getRawLength(void) {
     return rawLen;
+}
+
+uint8_t *Message::getWriteBuffer(void) {
+    return raw + rawLen;
+}
+
+void Message::writeLength(int len) {
+    rawLen += len;
 }
 
 /* For now use the handcrafted macros to avoid dependency on the big table */

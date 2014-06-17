@@ -98,11 +98,13 @@ void Base::loop() {
     }
 
     while (radioManager.available()) {
-        uint8_t pkt[RH_NRF24_MAX_MESSAGE_LEN], len;
+        Message msg;
+        uint8_t len;
 
         /* New radio packet received */
-        if (radioManager.recvfromAck(pkt, &len, NULL, NULL, NULL, NULL)) {
-            Message msg(pkt, len);
+        if (radioManager.recvfromAck(msg.getWriteBuffer(), &len,
+                    NULL, NULL, NULL, NULL)) {
+            msg.writeLength(len);
             aJsonObject *obj = MessageJsonConverter::messageToJson(msg);
 
             /* Successfully converted to JSON */
