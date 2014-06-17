@@ -70,6 +70,8 @@ enum CodingType {
 #define HEADERS_LENGTH 4
 #define PAYLOAD_LENGTH 20
 
+#define MAX_MESSAGE_SIZE (HEADERS_LENGTH + PAYLOAD_LENGTH)
+
 class Message {
     public:
         /* Use this when building a brand new message */

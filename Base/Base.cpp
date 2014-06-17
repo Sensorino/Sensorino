@@ -4,6 +4,7 @@
 
 #include "Base.h"
 #include "MessageJsonConverter.h"
+#include "FragmentedDatagram.h"
 
 /* TODO: make these configurable */
 #define CONFIG_CSN_PIN  10
@@ -27,7 +28,8 @@ void watchdogConfig(uint8_t x) {
 static MessageJsonConverter conv;
 
 static RH_NRF24 radio(CONFIG_CE_PIN, CONFIG_CSN_PIN);
-static RHReliableDatagram radioManager(radio, 0);
+static FragmentedDatagram<RHReliableDatagram, RH_NRF24_MAX_MESSAGE_LEN,
+        MAX_MESSAGE_SIZE> radioManager(radio, 0);
 
 void Base::setup() {
     watchdogConfig(0);
