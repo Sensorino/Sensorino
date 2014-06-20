@@ -22,6 +22,8 @@ enum MessageType {
     /* Metatypes */\
     F(0, DATATYPE, DataType, int)\
     F(1, SERVICE_ID, ServiceId, int)\
+    F(2, MESSAGE, Message, binary)\
+    F(3, EXPRESSION, Expression, binary)\
     /* ISO-defined physical dimensions */\
     F(20, ACCELERATION, Acceleration, float)\
     F(21, AMOUNT, Amount, float)\
@@ -65,6 +67,12 @@ enum CodingType {
     intCoding,
     floatCoding,
     boolCoding,
+    binaryCoding,
+};
+
+struct BinaryValue {
+    uint8_t *value;
+    uint8_t len;
 };
 
 #define HEADERS_LENGTH 4
@@ -120,6 +128,7 @@ class Message {
         void addIntValue(DataType t, int value);
         void addDataTypeValue(DataType t);
         void addBoolValue(DataType t, int value);
+        void addBinaryValue(DataType t, uint8_t *value, uint8_t len);
 
         /* Accessors for types encoded as floats */
 #define _glue(x, y)  x##y
@@ -129,8 +138,10 @@ class Message {
 #define float(CamelName) \
         void glue(add, CamelName)(float val); \
         void glue(add, CamelName)(int val);
+#define binary(...)
 #define FLOAT_INT_ACCESSOR(intval, CAPS, Camel, coding) coding(Camel)
 DATATYPE_LIST_APPLY(FLOAT_INT_ACCESSOR)
+#undef binary
 #undef float
 #undef bool
 #undef int

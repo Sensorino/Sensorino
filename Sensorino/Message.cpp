@@ -169,6 +169,7 @@ void Message::writeLength(int len) {
 #define BOOL_TYPE(t) (t == PRESENCE || t == SWITCH)
 #define INT_TYPE(t) (t == DATATYPE || t == COUNT || t == SERVICE_ID)
 #define FLOAT_TYPE(t) (t >= ACCELERATION && t < COUNT)
+#define BINARY_TYPE(t) (t == EXPRESSION || t == MESSAGE)
 
 int Message::find(DataType t, int num, void *value) {
     int pos = HEADERS_LENGTH, len;
@@ -199,8 +200,10 @@ int Message::find(DataType t, int num, void *value) {
 #define CHECK_LENGTH(n) (pos + n > HEADERS_LENGTH + PAYLOAD_LENGTH || \
         len < n)
 
-        /* Is this type serialised as a boolean, int or float? */
-        if (BOOL_TYPE(t)) {
+        /* Is this type serialised as a boolean, int, float or binary? */
+        if (!value) {
+            /* Nothing to do */
+        } else if (BOOL_TYPE(t)) {
             int bool_val;
 
             if (CHECK_LENGTH(1))
@@ -231,6 +234,12 @@ int Message::find(DataType t, int num, void *value) {
                 int_val |= raw[pos++];
             }
             *(int *) value = int_val;
+        } else if (BINARY_TYPE(t)) {
+            if (CHECK_LENGTH(len))
+                return 0;
+
+            ((BinaryValue *) value)->value = raw + pos;
+            ((BinaryValue *) value)->len = len;
         }
 
         return 1;
@@ -328,6 +337,18 @@ void Message::addBoolValue(DataType t, int value) {
     checkIntegrity();
 }
 
+void Message::addBinaryValue(DataType t, uint8_t *value, uint8_t len) {
+    /* Type */
+    rawLen += appendTypePart(raw + rawLen, t);
+
+    /* Len + Value */
+    raw[rawLen++] = len;
+    memcpy(raw + rawLen, value, len);
+    rawLen += len;
+
+    checkIntegrity();
+}
+
 #define int(...)
 #define bool(...)
 #define float(CAPS_NAME, CamelName) \
@@ -339,8 +360,10 @@ void Message::glue(add, CamelName)(float val) { \
 void Message::glue(add, CamelName)(int val) { \
     addFloatValue(CAPS_NAME, val); \
 }
+#define binary(...)
 #define FLOAT_INT_ACCESSOR_IMPL(intval, CAPS, Camel, coding) coding(CAPS, Camel)
 DATATYPE_LIST_APPLY(FLOAT_INT_ACCESSOR_IMPL)
+#undef binary
 #undef float
 #undef bool
 #undef int
@@ -415,6 +438,9 @@ void Message::iterGetTypeValue(Message::iter i, DataType *type, void *val) {
             }
 
             *(int *) val = int_val;
+        } else if (BINARY_TYPE(t)) {
+            ((BinaryValue *) val)->value = raw + i;
+            ((BinaryValue *) val)->len = len;
         }
     }
 }
