@@ -10,6 +10,7 @@
 
 class Service;
 class Message;
+class RuleService;
 
 class GenIntrCallback {
 public:
@@ -18,7 +19,7 @@ public:
 
 class Sensorino {
     public:
-        Sensorino(int noSM = 0);
+        Sensorino(int noSM = 0, int noRE = 0);
 
         void handleMessage(Message &m);
         void setAddress(uint8_t address);
@@ -48,6 +49,8 @@ class Sensorino {
 
         Service *services[MAX_SERVICES];
         uint8_t servicesNum;
+
+        RuleService *ruleEngine;
 
         void radioOpDone(void);
         void radioCheckPacket(void);

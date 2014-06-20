@@ -25,6 +25,7 @@
 #include "Message.h"
 #include "Service.h"
 #include "ServiceManagerService.h"
+#include "RuleService.h"
 #include "FragmentedDatagram.h"
 
 /* TODO: make these configurable */
@@ -35,7 +36,7 @@
 static FragmentedDatagram<RHReliableDatagram, RH_NRF24_MAX_MESSAGE_LEN,
         MAX_MESSAGE_SIZE> *radioManager;
 
-Sensorino::Sensorino(int noSM) {
+Sensorino::Sensorino(int noSM, int noRE) {
     if (sensorino)
         die(PSTR("For now only one allowed"));
 
@@ -65,6 +66,11 @@ Sensorino::Sensorino(int noSM) {
     /* Create a Service Manager unless we were told not to */
     if (!noSM)
         new ServiceManagerService();
+
+    /* Create a Rule Engine unless we were told not to */
+    ruleEngine = NULL;
+    if (!noRE)
+        ruleEngine = new RuleService();
 
     PCMSK0 = 0;
     PCMSK1 = 0;
@@ -141,6 +147,9 @@ bool Sensorino::sendMessage(Message &m) {
     ret = radioManager->sendtoWait((uint8_t *) m.getRawData(),
             m.getRawLength(), m.getDstAddress());
     radioBusy--;
+
+    if (ruleEngine)
+        ruleEngine->evalPublish(m);
 
     if (!radioBusy)
         radioOpDone();
