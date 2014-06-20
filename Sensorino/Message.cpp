@@ -4,6 +4,7 @@
  * https://en.wikipedia.org/wiki/Basic_Encoding_Rules#BER_encoding
  */
 #include <string.h>
+#include <math.h>
 
 #include "Message.h"
 #include "../Sensorino/Sensorino.h"
@@ -443,6 +444,17 @@ void Message::iterGetTypeValue(Message::iter i, DataType *type, void *val) {
             ((BinaryValue *) val)->len = len;
         }
     }
+}
+
+float Message::toFloat(DataType t, void *val) {
+    if (BOOL_TYPE(t))
+        return (*(int *) val) ? 1.0f : 0.0f;
+    else if (INT_TYPE(t))
+        return *(int *) val;
+    else if (FLOAT_TYPE(t))
+        return *(float *) val;
+    else
+        return NAN;
 }
 
 /* vim: set sw=4 ts=4 et: */

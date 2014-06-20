@@ -152,6 +152,8 @@ DATATYPE_LIST_APPLY(FLOAT_INT_ACCESSOR)
         void iterAdvance(iter &i);
         void iterGetTypeValue(iter i, DataType *type, void *val);
 
+        static float toFloat(DataType t, void *val);
+
     protected:
         uint8_t raw[HEADERS_LENGTH + PAYLOAD_LENGTH];
         uint8_t rawLen;

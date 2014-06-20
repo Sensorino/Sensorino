@@ -1,0 +1,425 @@
+#include <Arduino.h>
+
+#include "Service.h"
+#include "Expression.h"
+
+#define EPSILON 0.0001f
+#define IS_TRUE(flt) (flt > 0.5f)
+#define IS_ZERO(flt) (flt < EPSILON && -flt < EPSILON)
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof(*x))
+
+class RuleService : public Service {
+public:
+    RuleService() : Service(1) {
+        /* Mark rule storage as empty */
+        setByte(0, 0xff);
+
+        /* Mark all entries in variable cache as empty */
+        for (uint8_t i = 0; i < ARRAY_SIZE(valueCache); i++)
+            valueCache[i].serviceId = 0xff;
+    }
+
+    void evalPublish(Message &message) {
+        int servId;
+        uint32_t useMask = 0;
+
+        if (!message.find(SERVICE_ID, 0, &servId))
+            return;
+
+        int offset = 0;
+
+        /* Iterate over the ruleset, find rules that depend on the
+         * variables from the service that emitted this message.
+         */
+        while (1) {
+            uint8_t id = getByte(offset);
+            if (id == 0xff)
+                break;
+
+            uint8_t conditionLen = getByte(offset + 1);
+            uint8_t actionLen = getByte(offset + 2);
+            int conditionOffset = offset + 3;
+            int actionOffset = offset + 3 + conditionLen;
+            float result;
+            uint32_t ruleUseMask = 0;
+
+            result = evalExpression(conditionOffset, servId, message,
+                    ruleUseMask);
+
+            /* Mark variables present in this rule as used */
+            useMask |= ruleUseMask;
+
+            if (ruleUseMask && !isnan(result) && IS_TRUE(result)) {
+                /* Create a message with empty header and given payload */
+                Message m;
+                uint8_t *msgBuf = m.getWriteBuffer() + HEADERS_LENGTH;
+                uint8_t i = actionLen;
+                while (i--)
+                    *msgBuf++ = getByte(actionOffset++);
+                m.writeLength(HEADERS_LENGTH + actionLen);
+
+                m.setSrcAddress(sensorino->getAddress());
+                m.setDstAddress(sensorino->getAddress());
+                m.setType(SET);
+
+                /* Execute the action */
+                sensorino->handleMessage(m);
+            }
+
+            offset += 3 + conditionLen + actionLen;
+        }
+
+        CachedValue *v = valueCache;
+        while (useMask) {
+            if (useMask & 1) {
+                uint32_t value;
+                message.find(v->type, v->num, &value);
+                v->value = Message::toFloat(v->type, &value);
+            }
+            useMask >>= 1;
+            v++;
+        }
+    }
+
+protected:
+    /* TODO: this will be mapped directly to EEPROM, not stored in RAM */
+    uint8_t buffer[128];
+    struct CachedValue {
+        DataType type;
+        uint8_t serviceId;
+        uint8_t num;
+        float value;
+    } valueCache[10];
+
+    uint8_t getByte(int offset) {
+        return buffer[offset];
+    }
+    uint8_t setByte(int offset, uint8_t val) {
+        buffer[offset] = val;
+    }
+
+    void onSet(Message *message) {
+        int ruleId, offset;
+        BinaryValue condition, action;
+
+        if (!message->find(COUNT, 0, &ruleId)) {
+            err(message)->send();
+            return;
+        }
+
+        offset = findRule(ruleId);
+
+        if (!message->find(EXPRESSION, 0, NULL) &&
+                !message->find(MESSAGE, 0, NULL)) {
+            if (offset < 0)
+                err(message)->send();
+
+            /* TODO: delete rule ruleId */
+            err(message)->send();
+            return;
+        }
+
+        /* Create a new rule or update an existing one */
+        if (!message->find(EXPRESSION, 0, &condition) ||
+                !message->find(MESSAGE, 0, &action)) {
+            if (offset < 0)
+                err(message)->send();
+
+            /* TODO: updating not supported */
+            err(message)->send();
+            return;
+        }
+
+        /* Create a new rule */
+        if (offset >= 0) {
+            err(message)->send();
+            return;
+        }
+
+        createRule(ruleId, condition, action);
+    }
+
+    void onRequest(Message *message) {
+        int ruleId, offset;
+
+        if (!message->find(COUNT, 0, &ruleId)) {
+            err(message)->send();
+            return;
+        }
+
+        offset = findRule(ruleId);
+
+        if (offset < 0) {
+            err(message)->send();
+            return;
+        }
+
+        uint8_t conditionLen = getByte(offset + 1);
+        uint8_t actionLen = getByte(offset + 2);
+        int conditionOffset = offset + 3;
+        int actionOffset = offset + 3 + conditionLen;
+        uint8_t buf[100];
+
+        Message *resp = publish(message);
+
+        resp->addIntValue(COUNT, ruleId);
+
+        for (uint8_t i = 0; i < conditionLen; i++)
+            buf[i] = getByte(conditionOffset + i);
+        resp->addBinaryValue(EXPRESSION, buf, conditionLen);
+
+        for (uint8_t i = 0; i < actionLen; i++)
+            buf[i] = getByte(actionOffset + i);
+        resp->addBinaryValue(MESSAGE, buf, actionLen);
+
+        resp->send();
+    }
+
+    void createRule(uint8_t ruleId,
+            BinaryValue &condition, BinaryValue &action) {
+        int offset;
+
+        /* Find empty space in the buffer */
+        offset = findRule(0xff);
+
+        if (offset + 4 + condition.len + action.len > sizeof(buffer)) {
+            err()->send();
+            return;
+        }
+
+        setByte(offset++, ruleId);
+        setByte(offset++, condition.len);
+        setByte(offset++, action.len);
+
+        for (uint8_t i = 0; i < condition.len; i++)
+            setByte(offset++, condition.value[i]);
+
+        for (uint8_t i = 0; i < action.len; i++)
+            setByte(offset++, action.value[i]);
+
+        setByte(offset, 0xff);
+    }
+
+    int findRule(uint8_t ruleId) {
+        int offset = 0;
+
+        while (1) {
+            uint8_t id = getByte(offset);
+            if (id == ruleId) {
+                return offset;
+            }
+            if (id == 0xff)
+                /* We've found empty space */
+                break;
+
+            uint8_t conditionLen = getByte(offset + 1);
+            uint8_t actionLen = getByte(offset + 2);
+            offset += 3 + conditionLen + actionLen;
+        }
+
+        return -1;
+    }
+
+    /** Evaluate the expression and return its current value.  Evaluation
+     * is very simple and sort of like JavaScript in that there are no
+     * type errors and everything is cast to floats as a most general type.
+     * Precision problems may cause strange issues.
+     *
+     * TODO: size limit
+     *
+     * @param expr offset into the rule buffer where the expression starts,
+     * gets updated to point at the end of the expression before this
+     * method returns.
+     * @param servId ID of the service that published @m.
+     * @param m message in which to look for new values of referenced
+     * variables.
+     * @param useMask bitmask with one bit per variable cache entry.
+     * This method sets the bits corresponding to variables referenced
+     * by this expression and whose new value is available in @m.
+     * @return expression's current value.
+     */
+    float evalExpression(int &expr, uint8_t servId, Message &m,
+            uint32_t &useMask) {
+        uint8_t op = getByte(expr++);
+
+        float op1, op2, diff, ret;
+
+        uint8_t varServId, varNum, i;
+        DataType varType;
+        int16_t intVal;
+
+        using namespace Expression;
+
+        switch (op) {
+        case VAL_INT8:
+            return (int8_t) getByte(expr++);
+
+        case VAL_INT16:
+            intVal = ((uint16_t) getByte(expr) << 8) | getByte(expr + 1);
+            expr += 2;
+            return intVal;
+
+        case VAL_FLOAT:
+            *(uint32_t *) &ret =
+                ((uint32_t) getByte(expr + 0) << 24) |
+                ((uint32_t) getByte(expr + 1) << 16) |
+                ((uint32_t) getByte(expr + 2) <<  8) |
+                ((uint32_t) getByte(expr + 3) <<  0);
+            expr += 4;
+            return ret;
+
+        case VAL_VARIABLE:
+        case VAL_PREVIOUS:
+            varServId = getByte(expr++);
+            varType = (DataType) getByte(expr++);
+            varNum = getByte(expr++);
+            return getVariableValue(m, servId, varServId, varType, varNum,
+                    useMask, op == VAL_VARIABLE);
+
+        case OP_EQ:
+            op1 = evalExpression(expr, servId, m, useMask);
+            diff = op1 - evalExpression(expr, servId, m, useMask);
+            return IS_ZERO(diff);
+
+        case OP_NE:
+            op1 = evalExpression(expr, servId, m, useMask);
+            diff = op1 - evalExpression(expr, servId, m, useMask);
+            return !IS_ZERO(diff);
+
+        case OP_LT:
+            op1 = evalExpression(expr, servId, m, useMask);
+            diff = evalExpression(expr, servId, m, useMask) - op1;
+            return diff > EPSILON;
+
+        case OP_GT:
+            op1 = evalExpression(expr, servId, m, useMask);
+            diff = op1 - evalExpression(expr, servId, m, useMask);
+            return diff > EPSILON;
+
+        case OP_LE:
+            op1 = evalExpression(expr, servId, m, useMask);
+            diff = op1 - evalExpression(expr, servId, m, useMask);
+            return diff < EPSILON;
+
+        case OP_GE:
+            op1 = evalExpression(expr, servId, m, useMask);
+            diff = evalExpression(expr, servId, m, useMask) - op1;
+            return diff < EPSILON;
+
+        case OP_NOT:
+            return !IS_TRUE(evalExpression(expr, servId, m, useMask));
+
+        case OP_OR:
+            op1 = evalExpression(expr, servId, m, useMask);
+            return IS_TRUE(evalExpression(expr, servId, m, useMask)) ||
+                IS_TRUE(op1);
+
+        case OP_AND:
+            op1 = evalExpression(expr, servId, m, useMask);
+            return IS_TRUE(evalExpression(expr, servId, m, useMask)) &&
+                IS_TRUE(op1);
+
+        case OP_ADD:
+            return evalExpression(expr, servId, m, useMask) +
+                evalExpression(expr, servId, m, useMask);
+
+        case OP_SUB:
+            op1 = evalExpression(expr, servId, m, useMask);
+            return op1 - evalExpression(expr, servId, m, useMask);
+
+        case OP_MULT:
+            return evalExpression(expr, servId, m, useMask) *
+                evalExpression(expr, servId, m, useMask);
+
+        case OP_DIV:
+            op1 = evalExpression(expr, servId, m, useMask);
+            return op1 / evalExpression(expr, servId, m, useMask);
+
+        case OP_NEG:
+            return -evalExpression(expr, servId, m, useMask);
+
+        case OP_IN:
+            i = getByte(expr++);
+            op1 = evalExpression(expr, servId, m, useMask);
+            while (i--) {
+                diff = op1 - evalExpression(expr, servId, m, useMask);
+                if (IS_ZERO(diff))
+                    return 1.0f;
+            }
+            return 0.0f;
+
+        case OP_IFELSE:
+            op1 = evalExpression(expr, servId, m, useMask);
+            if (IS_TRUE(op1)) {
+                ret = evalExpression(expr, servId, m, useMask);
+                evalExpression(expr, servId, m, useMask);
+            } else {
+                evalExpression(expr, servId, m, useMask);
+                ret = evalExpression(expr, servId, m, useMask);
+            }
+            return ret;
+
+        case OP_BETWEEN:
+            ret = evalExpression(expr, servId, m, useMask);
+            op1 = evalExpression(expr, servId, m, useMask);
+            op2 = evalExpression(expr, servId, m, useMask);
+            if (op1 < op2)
+                return ret > op1 && ret < op2;
+            else
+                return ret > op2 && ret < op1;
+        }
+
+        return NAN;
+    }
+
+    float getVariableValue(Message &m, uint8_t servId,
+            uint8_t varServId, DataType t, uint8_t num,
+            uint32_t &useMask, bool useCurrent) {
+        /* Check if we have this variable's value cached */
+        struct CachedValue *v = findVariable(varServId, t, num);
+
+        /* Do the message's and the variable's ServiceIds match? */
+        if (servId == varServId) {
+            uint32_t value;
+
+            /* Does the PUBLISH contain this variable? */
+            if (m.find(t, num, &value)) {
+                /* It does, mark it as in use */
+                if (!v) {
+                    v = cacheVariable(varServId, t, num);
+                    if (!v)
+                        return NAN;
+                    v->value = NAN;
+                }
+                useMask |= (uint32_t) 1 << (v - valueCache);
+
+                /* Check if we want to use its current value though */
+                if (useCurrent)
+                    return Message::toFloat(t, &value);
+            }
+        }
+
+        return v ? v->value : NAN;
+    }
+
+    CachedValue *findVariable(uint8_t servId, DataType type, uint8_t num) {
+        struct CachedValue *v;
+        for (v = valueCache; v < valueCache + ARRAY_SIZE(valueCache); v++)
+            if (v->serviceId == servId && v->type == type && v->num == num)
+                return v;
+        return NULL;
+    }
+
+    CachedValue *cacheVariable(uint8_t servId, DataType type, uint8_t num) {
+        struct CachedValue *v;
+        for (v = valueCache; v < valueCache + ARRAY_SIZE(valueCache); v++)
+            if (v->serviceId == 0xff) {
+                v->serviceId = servId;
+                v->type = type;
+                v->num = num;
+                return v;
+            }
+        return NULL;
+    }
+};
+/* vim: set sw=4 ts=4 et: */
