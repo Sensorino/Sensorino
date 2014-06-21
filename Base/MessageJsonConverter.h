@@ -21,6 +21,7 @@ public:
     /* Helpers */
     static void headerToJson(aJsonObject *obj, Message &m);
     static void payloadToJson(aJsonObject *obj, Message &m);
+    static bool jsonToPayload(Message &msg, aJsonObject &obj);
 
 private:
     uint8_t obj_str[128], obj_str_len, nest_depth, escape, quote;

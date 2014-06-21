@@ -144,7 +144,7 @@ void MessageJsonConverter::payloadToJson(aJsonObject *obj, Message &m) {
     }
 }
 
-static int messageAddElem(Message *msg, const char *name, aJsonObject *obj) {
+static int messageAddElem(Message &msg, const char *name, aJsonObject *obj) {
     DataType t = Message::stringToDataType(name);
     if (t == (DataType) __INT_MAX__)
         return -1;
@@ -158,7 +158,7 @@ static int messageAddElem(Message *msg, const char *name, aJsonObject *obj) {
         if (obj->type != aJson_True && obj->type != aJson_False)
             return -1;
 
-        msg->addBoolValue(t, obj->type == aJson_True);
+        msg.addBoolValue(t, obj->type == aJson_True);
         break;
 
     case intCoding:
@@ -176,11 +176,11 @@ static int messageAddElem(Message *msg, const char *name, aJsonObject *obj) {
                 if (valuetype == (DataType) __INT_MAX__)
                     return -1;
 
-                msg->addDataTypeValue(valuetype);
+                msg.addDataTypeValue(valuetype);
                 break;
             }
         } else if (obj->type == aJson_Int)
-            msg->addIntValue(t, obj->valueint);
+            msg.addIntValue(t, obj->valueint);
         else
             return -1;
 
@@ -190,8 +190,28 @@ static int messageAddElem(Message *msg, const char *name, aJsonObject *obj) {
         if (obj->type != aJson_Int && obj->type != aJson_Float)
             return -1;
 
-        msg->addFloatValue(t, obj->type == aJson_Int ?
+        msg.addFloatValue(t, obj->type == aJson_Int ?
                 obj->valueint : obj->valuefloat);
+        break;
+
+    case binaryCoding:
+        switch (t) {
+        case MESSAGE:
+            if (obj->type != aJson_Object)
+                return -1;
+            {
+                Message subMsg(0, 0);
+                if (!MessageJsonConverter::jsonToPayload(subMsg, *obj))
+                    return -1;
+                msg.addBinaryValue(t,
+                        subMsg.getRawData() + HEADERS_LENGTH,
+                        subMsg.getRawLength() - HEADERS_LENGTH);
+            }
+            break;
+
+        default:
+            return -1;
+        }
         break;
 
     default:
@@ -221,44 +241,51 @@ Message *MessageJsonConverter::jsonToMessage(aJsonObject &obj) {
 
     msg = new Message(from, to);
 
-    for (val = obj.child; val; val = val->next) {
-        if (!strcasecmp(val->name, "to") || !strcasecmp(val->name, "from")) {
-            /* Skip */
-            continue;
-        }
+    val = aJson.getObjectItem(&obj, "type");
+    if (!val || val->type != aJson_String)
+        goto err;
 
-        if (!strcasecmp(val->name, "type")) {
-            if (val->type != aJson_String)
-                goto err;
+    if (!strcmp(val->valuestring, "publish"))
+        msg->setType(PUBLISH);
+    else if (!strcmp(val->valuestring, "set"))
+        msg->setType(SET);
+    else if (!strcmp(val->valuestring, "request"))
+        msg->setType(REQUEST);
+    else if (!strcmp(val->valuestring, "err"))
+        msg->setType(ERR);
+    else
+        goto err;
 
-            if (!strcmp(val->valuestring, "publish"))
-                msg->setType(PUBLISH);
-            else if (!strcmp(val->valuestring, "set"))
-                msg->setType(SET);
-            else if (!strcmp(val->valuestring, "request"))
-                msg->setType(REQUEST);
-            else if (!strcmp(val->valuestring, "err"))
-                msg->setType(ERR);
-            else
-                goto err;
-
-            continue;
-        }
-
-        if (val->type == aJson_Array) {
-            for (aJsonObject *elem = val->child; elem; elem = elem->next)
-                if (messageAddElem(msg, val->name, elem))
-                    goto err;
-        } else
-            if (messageAddElem(msg, val->name, val))
-                goto err;
-    }
+    if (!jsonToPayload(*msg, obj))
+        goto err;
 
     return msg;
 
 err:
     delete msg;
     return NULL;
+}
+
+bool MessageJsonConverter::jsonToPayload(Message &msg, aJsonObject &obj) {
+    aJsonObject *val;
+
+    for (val = obj.child; val; val = val->next) {
+        if (!strcasecmp(val->name, "to") || !strcasecmp(val->name, "from") ||
+                !strcasecmp(val->name, "type")) {
+            /* Skip */
+            continue;
+        }
+
+        if (val->type == aJson_Array) {
+            for (aJsonObject *elem = val->child; elem; elem = elem->next)
+                if (messageAddElem(msg, val->name, elem))
+                    return 0;
+        } else
+            if (messageAddElem(msg, val->name, val))
+                return 0;
+    }
+
+    return 1;
 }
 
 MessageJsonConverter::MessageJsonConverter() {

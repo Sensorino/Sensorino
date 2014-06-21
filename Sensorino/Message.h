@@ -128,7 +128,7 @@ class Message {
         void addIntValue(DataType t, int value);
         void addDataTypeValue(DataType t);
         void addBoolValue(DataType t, bool value);
-        void addBinaryValue(DataType t, uint8_t *value, uint8_t len);
+        void addBinaryValue(DataType t, const uint8_t *value, uint8_t len);
 
         /* Accessors for types encoded as floats */
 #define _glue(x, y)  x##y

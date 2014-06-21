@@ -338,7 +338,7 @@ void Message::addBoolValue(DataType t, bool value) {
     checkIntegrity();
 }
 
-void Message::addBinaryValue(DataType t, uint8_t *value, uint8_t len) {
+void Message::addBinaryValue(DataType t, const uint8_t *value, uint8_t len) {
     /* Type */
     rawLen += appendTypePart(raw + rawLen, t);
 
