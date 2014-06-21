@@ -14,7 +14,13 @@ static bool isEnumType(DataType t) {
 aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
     aJsonObject *obj = aJson.createObject();
 
-    /* Convert the header first */
+    headerToJson(obj, m);
+    payloadToJson(obj, m);
+
+    return obj;
+}
+
+void MessageJsonConverter::headerToJson(aJsonObject *obj, Message &m) {
     uint8_t from = m.getSrcAddress();
     uint8_t to = m.getDstAddress();
     MessageType type = m.getType();
@@ -45,7 +51,9 @@ aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
     else
         aJson.addNumberToObject(obj, "type", type);
     aJson.addNumberToObject(obj, "from", from);
+}
 
+void MessageJsonConverter::payloadToJson(aJsonObject *obj, Message &m) {
     for (Message::iter i = m.begin(); i; m.iterAdvance(i)) {
         DataType t;
         uint32_t val;
@@ -86,6 +94,24 @@ aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
         case floatCoding:
             child = aJson.createItem((double) *(float *) &val);
             break;
+        case binaryCoding:
+            switch (t) {
+            case MESSAGE:
+                child = aJson.createObject();
+                {
+                    Message subMsg;
+                    memcpy(subMsg.getWriteBuffer() + HEADERS_LENGTH,
+                            ((BinaryValue *) &val)->value,
+                            ((BinaryValue *) &val)->len);
+                    subMsg.writeLength(HEADERS_LENGTH +
+                            ((BinaryValue *) &val)->len);
+                    payloadToJson(child, subMsg);
+                }
+                break;
+            default:
+                child = aJson.createItem("fixme");
+            }
+            break;
         default:
             child = aJson.createItem("fixme");
             break;
@@ -116,8 +142,6 @@ aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
         } else
             aJson.addItemToObject(obj, name, child);
     }
-
-    return obj;
 }
 
 static int messageAddElem(Message *msg, const char *name, aJsonObject *obj) {
