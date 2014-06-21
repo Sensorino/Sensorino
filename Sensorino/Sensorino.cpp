@@ -143,6 +143,10 @@ volatile uint8_t Sensorino::radioBusy = 0;
 bool Sensorino::sendMessage(Message &m) {
     bool ret;
 
+    /* Ignore messages addressed at ourselves, such as responses to events */
+    if (m.getDstAddress() == getAddress())
+        return 0;
+
     radioBusy++;
     ret = radioManager->sendtoWait((uint8_t *) m.getRawData(),
             m.getRawLength(), m.getDstAddress());
