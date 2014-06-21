@@ -141,9 +141,33 @@ protected:
 
     void onRequest(Message *message) {
         int ruleId, offset;
+        uint8_t num, typeExpr, typeMsg, typeType;
+        DataType dt;
+
+        /* See what data types are being requested */
+        while (message->find(DATATYPE, num++, &dt))
+            if (dt == DATATYPE)
+                typeType = 1;
+            else if (dt == EXPRESSION)
+                typeExpr = 1;
+            else if (dt == MESSAGE)
+                typeMsg = 1;
+            else {
+                err(message)->send();
+                return;
+            }
 
         if (!message->find(COUNT, 0, &ruleId)) {
-            err(message)->send();
+            if (typeType) {
+                /* Send service description */
+                Message *m = publish(message);
+                m->addIntValue(COUNT, 0);
+                m->addIntValue(COUNT, 2);
+                m->addDataTypeValue(EXPRESSION);
+                m->addDataTypeValue(MESSAGE);
+                m->send();
+            } else
+                err(message)->send();
             return;
         }
 
@@ -164,13 +188,17 @@ protected:
 
         resp->addIntValue(COUNT, ruleId);
 
-        for (uint8_t i = 0; i < conditionLen; i++)
-            buf[i] = getByte(conditionOffset + i);
-        resp->addBinaryValue(EXPRESSION, buf, conditionLen);
+        if (typeExpr) {
+            for (uint8_t i = 0; i < conditionLen; i++)
+                buf[i] = getByte(conditionOffset + i);
+            resp->addBinaryValue(EXPRESSION, buf, conditionLen);
+        }
 
-        for (uint8_t i = 0; i < actionLen; i++)
-            buf[i] = getByte(actionOffset + i);
-        resp->addBinaryValue(MESSAGE, buf, actionLen);
+        if (typeMsg) {
+            for (uint8_t i = 0; i < actionLen; i++)
+                buf[i] = getByte(actionOffset + i);
+            resp->addBinaryValue(MESSAGE, buf, actionLen);
+        }
 
         resp->send();
     }
