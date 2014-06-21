@@ -51,7 +51,7 @@ protected:
         }
 
         /* We don't understand this request, send an error */
-        err(message)->send();
+        err(message, DATATYPE)->send();
     }
 
     void pinHandler(int pin) {

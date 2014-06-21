@@ -103,7 +103,7 @@ protected:
         BinaryValue condition, action;
 
         if (!message->find(COUNT, 0, &ruleId)) {
-            err(message)->send();
+            err(message, COUNT)->send();
             return;
         }
 
@@ -112,7 +112,7 @@ protected:
         if (!message->find(EXPRESSION, 0, NULL) &&
                 !message->find(MESSAGE, 0, NULL)) {
             if (offset < 0)
-                err(message)->send();
+                err(message, COUNT)->send();
 
             /* TODO: delete rule ruleId */
             err(message)->send();
@@ -123,7 +123,7 @@ protected:
         if (!message->find(EXPRESSION, 0, &condition) ||
                 !message->find(MESSAGE, 0, &action)) {
             if (offset < 0)
-                err(message)->send();
+                err(message, COUNT)->send();
 
             /* TODO: updating not supported */
             err(message)->send();
@@ -132,7 +132,7 @@ protected:
 
         /* Create a new rule */
         if (offset >= 0) {
-            err(message)->send();
+            err(message, COUNT)->send();
             return;
         }
 
@@ -153,7 +153,7 @@ protected:
             else if (dt == MESSAGE)
                 typeMsg = 1;
             else {
-                err(message)->send();
+                err(message, dt)->send();
                 return;
             }
 
@@ -167,14 +167,14 @@ protected:
                 m->addDataTypeValue(MESSAGE);
                 m->send();
             } else
-                err(message)->send();
+                err(message, COUNT)->send();
             return;
         }
 
         offset = findRule(ruleId);
 
         if (offset < 0) {
-            err(message)->send();
+            err(message, COUNT)->send();
             return;
         }
 

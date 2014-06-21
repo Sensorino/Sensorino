@@ -48,7 +48,7 @@ protected:
         }
 
         /* We don't understand this request, send an error */
-        err(message)->send();
+        err(message, DATATYPE)->send();
     }
 };
 /* vim: set sw=4 ts=4 et: */

@@ -30,11 +30,16 @@ Message *Service::publish(Message *message) {
     return startBaseMessage(PUBLISH, message);
 }
 
-Message *Service::err(Message *message) {
+Message *Service::err(Message *message, DataType type) {
     /* NOTE: we may want to reference the original message Id in the
      * response somehow.
      */
-    return startBaseMessage(ERR, message);
+    Message *m = startBaseMessage(ERR, message);
+
+    if (type != (DataType) -1)
+        m->addDataTypeValue(type);
+
+    return m;
 }
 
 Message *Service::startBaseMessage(MessageType type, Message *orig) {
