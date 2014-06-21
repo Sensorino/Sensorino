@@ -5,7 +5,7 @@
 
 #define EPSILON 0.0001f
 #define IS_TRUE(flt) (flt > 0.5f)
-#define IS_ZERO(flt) (flt < EPSILON && -flt < EPSILON)
+#define IS_ZERO(flt) ((flt) < EPSILON && -(flt) < EPSILON)
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(*x))
 
 class RuleService : public Service {
@@ -272,7 +272,7 @@ protected:
 
         float op1, op2, diff, ret;
 
-        uint8_t varServId, varNum, i;
+        uint8_t varServId, varNum, i, b;
         DataType varType;
         int16_t intVal;
 
@@ -305,64 +305,54 @@ protected:
                     useMask, op == VAL_VARIABLE);
 
         case OP_EQ:
-            op1 = evalExpression(expr, servId, m, useMask);
-            diff = op1 - evalExpression(expr, servId, m, useMask);
-            return IS_ZERO(diff);
-
         case OP_NE:
-            op1 = evalExpression(expr, servId, m, useMask);
-            diff = op1 - evalExpression(expr, servId, m, useMask);
-            return !IS_ZERO(diff);
-
         case OP_LT:
-            op1 = evalExpression(expr, servId, m, useMask);
-            diff = evalExpression(expr, servId, m, useMask) - op1;
-            return diff > EPSILON;
-
         case OP_GT:
-            op1 = evalExpression(expr, servId, m, useMask);
-            diff = op1 - evalExpression(expr, servId, m, useMask);
-            return diff > EPSILON;
-
         case OP_LE:
-            op1 = evalExpression(expr, servId, m, useMask);
-            diff = op1 - evalExpression(expr, servId, m, useMask);
-            return diff < EPSILON;
-
         case OP_GE:
-            op1 = evalExpression(expr, servId, m, useMask);
-            diff = evalExpression(expr, servId, m, useMask) - op1;
-            return diff < EPSILON;
-
-        case OP_NOT:
-            return !IS_TRUE(evalExpression(expr, servId, m, useMask));
-
         case OP_OR:
-            op1 = evalExpression(expr, servId, m, useMask);
-            return IS_TRUE(evalExpression(expr, servId, m, useMask)) ||
-                IS_TRUE(op1);
-
         case OP_AND:
-            op1 = evalExpression(expr, servId, m, useMask);
-            return IS_TRUE(evalExpression(expr, servId, m, useMask)) &&
-                IS_TRUE(op1);
-
         case OP_ADD:
-            return evalExpression(expr, servId, m, useMask) +
-                evalExpression(expr, servId, m, useMask);
-
         case OP_SUB:
-            op1 = evalExpression(expr, servId, m, useMask);
-            return op1 - evalExpression(expr, servId, m, useMask);
-
         case OP_MULT:
-            return evalExpression(expr, servId, m, useMask) *
-                evalExpression(expr, servId, m, useMask);
-
         case OP_DIV:
             op1 = evalExpression(expr, servId, m, useMask);
-            return op1 / evalExpression(expr, servId, m, useMask);
+            op2 = evalExpression(expr, servId, m, useMask);
+            diff = op1 - op2;
+            if (isnan(diff))
+                return NAN;
+            switch(op) {
+            case OP_EQ:
+            case OP_NE:
+                b = IS_ZERO(diff);
+                return (op == OP_EQ) ? b : !b;
+            case OP_LE:
+            case OP_GT:
+                b = diff > EPSILON;
+                return (op == OP_GT) ? b : !b;
+            case OP_LT:
+            case OP_GE:
+                b = diff < -EPSILON;
+                return (op == OP_LT) ? b : !b;
+            case OP_OR:
+                return IS_TRUE(op1) || IS_TRUE(op2);
+            case OP_AND:
+                return IS_TRUE(op1) && IS_TRUE(op2);
+            case OP_ADD:
+                return op1 + op2;
+            case OP_SUB:
+                return diff;
+            case OP_MULT:
+                return op1 * op2;
+            case OP_DIV:
+                return op1 / op2;
+            }
 
+        case OP_NOT:
+            op1 = evalExpression(expr, servId, m, useMask);
+            return isnan(op1) ? NAN : !IS_TRUE(op1);
+
+        /* TODO: check for NaNs in remaining ops or drop them to save space */
         case OP_NEG:
             return -evalExpression(expr, servId, m, useMask);
 
