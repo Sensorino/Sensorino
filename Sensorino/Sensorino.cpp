@@ -36,7 +36,7 @@
 static FragmentedDatagram<RHReliableDatagram, RH_NRF24_MAX_MESSAGE_LEN,
         MAX_MESSAGE_SIZE> *radioManager;
 
-Sensorino::Sensorino(int noSM, int noRE) {
+Sensorino::Sensorino(bool noSM, bool noRE) {
     if (sensorino)
         die(PSTR("For now only one allowed"));
 

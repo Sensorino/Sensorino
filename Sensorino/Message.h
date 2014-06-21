@@ -127,7 +127,7 @@ class Message {
         void addFloatValue(DataType t, float value);
         void addIntValue(DataType t, int value);
         void addDataTypeValue(DataType t);
-        void addBoolValue(DataType t, int value);
+        void addBoolValue(DataType t, bool value);
         void addBinaryValue(DataType t, uint8_t *value, uint8_t len);
 
         /* Accessors for types encoded as floats */

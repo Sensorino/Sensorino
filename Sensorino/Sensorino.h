@@ -19,7 +19,7 @@ public:
 
 class Sensorino {
     public:
-        Sensorino(int noSM = 0, int noRE = 0);
+        Sensorino(bool noSM = 0, bool noRE = 0);
 
         void handleMessage(Message &m);
         void setAddress(uint8_t address);

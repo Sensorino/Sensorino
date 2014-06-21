@@ -65,7 +65,7 @@ aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
 
         switch (coding) {
         case boolCoding:
-            child = aJson.createItem((char) *(int *) &val);
+            child = aJson.createItem((char) *(bool *) &val);
             break;
         case intCoding:
             if (isEnumType(t))

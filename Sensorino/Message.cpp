@@ -211,7 +211,7 @@ int Message::find(DataType t, int num, void *value) {
                 return 0;
 
             bool_val = raw[pos] != 0;
-            *(int *) value = bool_val;
+            *(bool *) value = bool_val;
         } else if (FLOAT_TYPE(t)) {
             uint32_t float_val;
 
@@ -327,7 +327,7 @@ void Message::addDataTypeValue(DataType t) {
     addIntValue(DATATYPE, t);
 }
 
-void Message::addBoolValue(DataType t, int value) {
+void Message::addBoolValue(DataType t, bool value) {
     /* Type */
     rawLen += appendTypePart(raw + rawLen, t);
 
@@ -420,7 +420,7 @@ void Message::iterGetTypeValue(Message::iter i, DataType *type, void *val) {
     /* Read value */
     if (val) {
         if (BOOL_TYPE(t))
-            *(int *) val = raw[i] != 0;
+            *(bool *) val = raw[i] != 0;
         else if (FLOAT_TYPE(t)) {
             uint32_t float_val;
 
@@ -448,7 +448,7 @@ void Message::iterGetTypeValue(Message::iter i, DataType *type, void *val) {
 
 float Message::toFloat(DataType t, void *val) {
     if (BOOL_TYPE(t))
-        return (*(int *) val) ? 1.0f : 0.0f;
+        return (*(bool *) val) ? 1.0f : 0.0f;
     else if (INT_TYPE(t))
         return *(int *) val;
     else if (FLOAT_TYPE(t))

@@ -1,8 +1,10 @@
+#include <Arduino.h>
+
 #include "Service.h"
 
 class RelayService : public Service {
 public:
-    RelayService(int id, int pin, int init_state=0) : Service(id), pin(pin) {
+    RelayService(int id, int pin, bool init_state=0) : Service(id), pin(pin) {
         pinMode(pin, OUTPUT);
         digitalWrite(pin, init_state);
 
@@ -11,10 +13,10 @@ public:
 
 protected:
     int pin;
-    int state;
+    bool state;
 
     void onSet(Message *message) {
-        int new_state;
+        bool new_state;
 
         if (!message->find(SWITCH, 0, &new_state))
             new_state = !state;
