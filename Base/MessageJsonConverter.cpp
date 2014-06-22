@@ -347,20 +347,21 @@ static void numToStr(char *&str, int16_t val) {
 }
 
 static void numToStr(char *&str, float val) {
-	uint16_t frac;
+    uint16_t frac;
 
-	if (val < 0.0f) {
-		*str++ = '-';
-		val = -val;
-	}
+    if (val < 0.0f) {
+        *str++ = '-';
+        val = -val;
+    }
     frac = numDigit(str, val) * 10000.0f;
-	if (frac)
-		*str++ = '.';
-	while (frac) {
+    if (frac) {
+        *str++ = '.';
+    }
+    while (frac) {
         uint8_t dig = frac / 1000;
-        frac = 10 * (frac - dig * 10);
+        frac = (frac % 1000) * 10;
         *str++ = '0' + dig;
-	}
+    }
 }
 
 void subexprToString(char *&str, const uint8_t *&buf, uint8_t &len) {
@@ -387,7 +388,7 @@ void subexprToString(char *&str, const uint8_t *&buf, uint8_t &len) {
 
     switch (op) {
     case VAL_INT8:
-        intVal = *buf++;
+        intVal = (int8_t) *buf++;
         len--;
         numToStr(str, intVal);
         break;
