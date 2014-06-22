@@ -23,6 +23,7 @@ public:
     static void payloadToJson(aJsonObject *obj, Message &m);
     static bool jsonToPayload(Message &msg, aJsonObject &obj);
     static char *exprToString(const uint8_t *buf, uint8_t len);
+    static uint8_t *exprFromString(const char *str, uint8_t *len);
 
 private:
     uint8_t obj_str[128], obj_str_len, nest_depth, escape, quote;

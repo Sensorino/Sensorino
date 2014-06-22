@@ -222,6 +222,20 @@ static int messageAddElem(Message &msg, const char *name, aJsonObject *obj) {
             }
             break;
 
+        case EXPRESSION:
+            if (obj->type != aJson_String)
+                return -1;
+            {
+                uint8_t len;
+                uint8_t *expr = MessageJsonConverter::exprFromString(
+                        obj->valuestring, &len);
+                if (!expr)
+                    return -1;
+                msg.addBinaryValue(t, expr, len);
+                free(expr);
+            }
+            break;
+
         default:
             return -1;
         }
@@ -318,6 +332,9 @@ struct {
     { Expression::OP_SUB, "-" },
     { Expression::OP_MULT, "*" },
     { Expression::OP_DIV, "/" },
+    { Expression::OP_IN, 'i', 'n' },
+    { Expression::OP_IFELSE, "?" },
+    { 0, 0 },
 };
 
 static void numDigit(char *&str, int16_t val) {
@@ -506,6 +523,187 @@ char *MessageJsonConverter::exprToString(const uint8_t *buf, uint8_t len) {
     *ptr = '\0';
 
     return str;
+}
+
+#define isDigit(x) ((x) >= '0' && (x) <= '9')
+
+static uint8_t uint8FromString(const char *&str) {
+    uint8_t val;
+    while (isDigit(*str))
+        val = val * 10 + (*str++ - '0');
+    return val;
+}
+
+static void valueFromString(uint8_t *&buf, const char *&str) {
+    if (!memcmp_P(str, PSTR("data:"), 5) || !memcmp_P(str, PSTR("prev:"), 5)) {
+        char name[30], len = 0;
+
+        /* Opcode byte */
+        *buf++ = (*str == 'd') ?
+            Expression::VAL_VARIABLE : Expression::VAL_PREVIOUS;
+        str += 5;
+
+        /* Service ID byte */
+        *buf++ = uint8FromString(str);
+
+        if (*str++ != ':')
+            return;
+
+        /* DataType byte */
+        while (*str != ':' && *str != '\0' && len < sizeof(name) - 1)
+            name[len++] = *str++;
+        name[len] = '\0';
+        *buf = (int) Message::stringToDataType(name);
+        if (*buf++ == 0xff)
+            return;
+
+        if (*str++ != ':')
+            return;
+
+        /* Data position byte */
+        *buf++ = uint8FromString(str);
+        return;
+    }
+
+    float val = 0;
+    bool negative = 0;
+
+    if (*str == '-') {
+        str++;
+        negative = 1;
+    }
+    while (isDigit(*str))
+        val = val * 10 + (*str++ - '0');
+    if (*str != '.') {
+        int16_t intVal = negative ? -val : val;
+
+        /* See if number is within integer range */
+        if (val <= 127.5f + negative) {
+            *buf++ = Expression::VAL_INT8;
+            *buf++ = intVal;
+            return;
+        }
+        if (val <= 32767.5f + negative) {
+            *buf++ = Expression::VAL_INT16;
+            *buf++ = intVal >> 8;
+            *buf++ = intVal;
+            return;
+        }
+        /* Nope, encode it as a float anyway */
+    } else {
+        float fracUnit = 0.1f;
+
+        str++;
+        while (isDigit(*str)) {
+            val += fracUnit * (*str++ - '0');
+            fracUnit *= 0.1f;
+        }
+    }
+    if (negative)
+        val = -val;
+    *buf++ = Expression::VAL_FLOAT;
+    *buf++ = (*(uint32_t *) &val) >> 24;
+    *buf++ = (*(uint32_t *) &val) >> 16;
+    *buf++ = (*(uint32_t *) &val) >>  8;
+    *buf++ = (*(uint32_t *) &val) >>  0;
+}
+
+static bool subexprFromString(uint8_t *&buf, const char *&str) {
+    uint8_t *in_counter = NULL;
+    bool ifelse = 0, between = 0;
+
+    while (1) {
+        uint8_t space, op, num, *start = buf;
+
+        using namespace Expression;
+
+        if (*str == '(') {
+            str++;
+            if (!subexprFromString(buf, str) || *str != ')')
+                return 0;
+            str++;
+        } else if (*str == '!' || (*str == '-' && !isDigit(str[1]))) {
+            *buf ++ = (*str++ == '!') ? OP_NOT : OP_NEG;
+            if (!subexprFromString(buf, str))
+                return 0;
+        } else
+            valueFromString(buf, str);
+
+        while (*str == ' ')
+            str++;
+
+        if (*str == ')' || *str == '\0')
+            break;
+
+        for (num = 0; pgm_read_byte(&opTable[num].val); num++)
+            if (str[0] == pgm_read_byte(&opTable[num].str[0]) &&
+                    (str[1] == pgm_read_byte(&opTable[num].str[1]) ||
+                     !pgm_read_byte(&opTable[num].str[1])))
+                break;
+        op = pgm_read_byte(&opTable[num].val);
+        space = 1;
+        if (op) {
+            str++;
+            if (pgm_read_byte(&opTable[num].str[1]))
+                str++;
+            if (op == OP_IN)
+                space = 2;
+        } else if (!memcmp_P(str, PSTR("between"), 7)) {
+            op = OP_BETWEEN;
+            str += 7;
+            between = 1;
+        } else if (str[0] == ',') {
+            if (in_counter)
+                *in_counter++;
+            else if (between)
+                between = 0;
+            else
+                break;
+        } else if (str[0] == ':') {
+            if (ifelse)
+                ifelse = 0;
+            else
+                break;
+        } else
+            return 0;
+
+        while (*str == ' ')
+            str++;
+
+        if (!op)
+            continue;
+        if (op == OP_IN)
+            space = 2;
+
+        for (uint8_t *ptr = buf - 1; ptr >= start; ptr--)
+            ptr[space] = ptr[0];
+        buf += space;
+        start[0] = op;
+
+        if (op == OP_IN) {
+            in_counter = start + 1;
+            *in_counter = 1;
+        } else if (op == OP_IFELSE)
+            ifelse = 1;
+    }
+
+    if (between || ifelse)
+        return 0;
+
+    return 1;
+}
+
+uint8_t *MessageJsonConverter::exprFromString(const char *str, uint8_t *len) {
+    uint8_t *buf = (uint8_t *) malloc(128); /* FIXME */
+    uint8_t *ptr = buf;
+
+    if (!subexprFromString(ptr, str) || *str != '\0') {
+        free(buf);
+        return NULL;
+    }
+
+    *len = ptr - buf;
+    return buf;
 }
 
 MessageJsonConverter::MessageJsonConverter() {
