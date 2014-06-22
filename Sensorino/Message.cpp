@@ -4,7 +4,7 @@
  * https://en.wikipedia.org/wiki/Basic_Encoding_Rules#BER_encoding
  */
 #include <string.h>
-#include <math.h>
+#include <Arduino.h>
 
 #include "Message.h"
 #include "../Sensorino/Sensorino.h"

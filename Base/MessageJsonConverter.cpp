@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <avr/pgmspace.h>
 
 #include "MessageJsonConverter.h"
 #include "Expression.h"
@@ -304,7 +305,7 @@ bool MessageJsonConverter::jsonToPayload(Message &msg, aJsonObject &obj) {
 struct {
     uint8_t val;
     char str[2];
-} opTable[] = {
+} opTable[] PROGMEM = {
     { Expression::OP_EQ, '=', '=' },
     { Expression::OP_NE, '!', '=' },
     { Expression::OP_LT, "<" },
@@ -442,11 +443,11 @@ void subexprToString(char *&str, const uint8_t *&buf, uint8_t &len) {
     case OP_MULT:
     case OP_DIV:
         subexprToString(str, buf, len);
-        for (num = 0; opTable[num].val != op; num++);
+        for (num = 0; pgm_read_byte(&opTable[num].val) != op; num++);
         SPACE;
-        *str++ = opTable[num].str[0];
-        if (opTable[num].str[1])
-            *str++ = opTable[num].str[1];
+        *str++ = pgm_read_byte(&opTable[num].str[0]);
+        if (pgm_read_byte(&opTable[num].str[1]))
+            *str++ = pgm_read_byte(&opTable[num].str[1]);
         SPACE;
         subexprToString(str, buf, len);
         break;
