@@ -1,6 +1,7 @@
 #include <stddef.h>
 
 #include "MessageJsonConverter.h"
+#include "Expression.h"
 
 static char lower(char chr) {
     if (chr >= 'A' && chr <= 'Z')
@@ -108,6 +109,17 @@ void MessageJsonConverter::payloadToJson(aJsonObject *obj, Message &m) {
                     payloadToJson(child, subMsg);
                 }
                 break;
+
+            case EXPRESSION:
+                {
+                    child = aJson.createNull();
+                    child->type = aJson_String;
+                    child->valuestring = exprToString(
+                            ((BinaryValue *) &val)->value,
+                            ((BinaryValue *) &val)->len);
+                }
+                break;
+
             default:
                 child = aJson.createItem("fixme");
             }
@@ -286,6 +298,212 @@ bool MessageJsonConverter::jsonToPayload(Message &msg, aJsonObject &obj) {
     }
 
     return 1;
+}
+
+/* TODO: pgmspace */
+struct {
+    uint8_t val;
+    char str[2];
+} opTable[] = {
+    { Expression::OP_EQ, '=', '=' },
+    { Expression::OP_NE, '!', '=' },
+    { Expression::OP_LT, "<" },
+    { Expression::OP_GT, ">" },
+    { Expression::OP_LE, '<', '=' },
+    { Expression::OP_GE, '>', '=' },
+    { Expression::OP_OR, '|', '|' },
+    { Expression::OP_AND, '&', '&' },
+    { Expression::OP_ADD, "+" },
+    { Expression::OP_SUB, "-" },
+    { Expression::OP_MULT, "*" },
+    { Expression::OP_DIV, "/" },
+};
+
+static void numDigit(char *&str, int16_t val) {
+    if (!val)
+        return;
+    numDigit(str, val / 10);
+    *str++ = '0' + (val % 10);
+}
+
+static float numDigit(char *&str, float val) {
+    if (val >= 10.0f)
+        val = numDigit(str, val / 10.0f) * 10.0f;
+    *str++ = '0' + (int) val;
+    return val - (int) val;
+}
+
+static void numToStr(char *&str, int16_t val) {
+    if (val == 0)
+        *str++ = '0';
+    else {
+        if (val < 0) {
+            *str++ = '-';
+            val = -val;
+        }
+        numDigit(str, val);
+    }
+}
+
+static void numToStr(char *&str, float val) {
+	uint16_t frac;
+
+	if (val < 0.0f) {
+		*str++ = '-';
+		val = -val;
+	}
+    frac = numDigit(str, val) * 10000.0f;
+	if (frac)
+		*str++ = '.';
+	while (frac) {
+        uint8_t dig = frac / 1000;
+        frac = 10 * (frac - dig * 10);
+        *str++ = '0' + dig;
+	}
+}
+
+void subexprToString(char *&str, const uint8_t *&buf, uint8_t &len) {
+    int intVal;
+    float floatVal;
+    uint8_t varServId, varType, varNum, num;
+    const char *name;
+
+    if (!len) {
+        memcpy_P(str, PSTR("fixme"), 5);
+        str += 5;
+        return;
+    }
+
+    len--;
+    uint8_t op = *buf++;
+
+    using namespace Expression;
+
+    if (op >= OP_EQ)
+        *str++ = '(';
+
+#define SPACE *str++ = ' '
+
+    switch (op) {
+    case VAL_INT8:
+        intVal = *buf++;
+        len--;
+        numToStr(str, intVal);
+        break;
+
+    case VAL_INT16:
+        intVal = ((uint16_t) buf[0] << 8) | buf[1];
+        buf += 2;
+        len -= 2;
+        numToStr(str, intVal);
+        break;
+
+    case VAL_FLOAT:
+        *(uint32_t *) &floatVal =
+            ((uint32_t) buf[0] << 24) |
+            ((uint32_t) buf[1] << 16) |
+            ((uint32_t) buf[2] <<  8) |
+            ((uint32_t) buf[3] <<  0);
+        buf += 4;
+        len -= 4;
+        numToStr(str, floatVal);
+        break;
+
+    case VAL_VARIABLE:
+    case VAL_PREVIOUS:
+        varServId = *buf++;
+        varType = (DataType) *buf++;
+        varNum = *buf++;
+        len -= 3;
+
+        memcpy_P(str, op == VAL_VARIABLE ? PSTR("data:") : PSTR("prev:"), 5);
+        str += 5;
+
+        numToStr(str, varServId);
+        *str++ = ':';
+        name = Message::dataTypeToString((DataType) varType, NULL) ?:
+            PSTR("fixme");
+        strcpy_P(str, name);
+        str += strlen_P(name);
+        *str++ = ':';
+        numToStr(str, varNum);
+        break;
+
+    case OP_EQ:
+    case OP_NE:
+    case OP_LT:
+    case OP_GT:
+    case OP_LE:
+    case OP_GE:
+    case OP_OR:
+    case OP_AND:
+    case OP_ADD:
+    case OP_SUB:
+    case OP_MULT:
+    case OP_DIV:
+        subexprToString(str, buf, len);
+        for (num = 0; opTable[num].val != op; num++);
+        SPACE;
+        *str++ = opTable[num].str[0];
+        if (opTable[num].str[1])
+            *str++ = opTable[num].str[1];
+        SPACE;
+        subexprToString(str, buf, len);
+        break;
+
+    case OP_NOT:
+    case OP_NEG:
+        *str++ = (op == OP_NOT) ? '!' : '-';
+        subexprToString(str, buf, len);
+        break;
+
+    case OP_IN:
+        num = *buf++;
+        len--;
+        subexprToString(str, buf, len);
+        memcpy_P(str, PSTR(" in "), 4);
+        str += 4;
+
+        while (--num) {
+            subexprToString(str, buf, len);
+            *str++ = ',';
+        }
+        subexprToString(str, buf, len);
+        break;
+
+    case OP_IFELSE:
+        subexprToString(str, buf, len);
+        SPACE;
+        *str++ = '?';
+        SPACE;
+        subexprToString(str, buf, len);
+        SPACE;
+        *str++ = ':';
+        SPACE;
+        subexprToString(str, buf, len);
+        break;
+
+    case OP_BETWEEN:
+        subexprToString(str, buf, len);
+        memcpy_P(str, PSTR(" between "), 9);
+        str += 9;
+        subexprToString(str, buf, len);
+        *str++ = ',';
+        subexprToString(str, buf, len);
+    }
+
+    if (op >= OP_EQ)
+        *str++ = ')';
+}
+
+char *MessageJsonConverter::exprToString(const uint8_t *buf, uint8_t len) {
+    char *str = (char *) malloc(128); /* FIXME */
+    char *ptr = str;
+
+    subexprToString(ptr, buf, len);
+    *ptr = '\0';
+
+    return str;
 }
 
 MessageJsonConverter::MessageJsonConverter() {
