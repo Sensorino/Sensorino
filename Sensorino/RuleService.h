@@ -3,10 +3,8 @@
 #include "Service.h"
 #include "Expression.h"
 
-#define EPSILON 0.0001f
 #define IS_TRUE(flt) (flt > 0.5f)
 #define IS_ZERO(flt) ((flt) < EPSILON && -(flt) < EPSILON)
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof(*x))
 
 class RuleService : public Service {
 public:

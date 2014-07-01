@@ -7,6 +7,7 @@
 #include <Arduino.h>
 
 #include "Message.h"
+#include "SensorinoUtils.h"
 #include "../Sensorino/Sensorino.h"
 
 /* Select if we want full BER compatibility in the Tag/Length/Value encoding
@@ -248,9 +249,6 @@ int Message::find(DataType t, int num, void *value) {
 
     return 0;
 }
-
-#define likely(x)	__builtin_expect((x), 1)
-#define unlikely(x)	__builtin_expect((x), 0)
 
 void Message::checkIntegrity(void) {
     if (unlikely(rawLen > HEADERS_LENGTH + PAYLOAD_LENGTH)) {

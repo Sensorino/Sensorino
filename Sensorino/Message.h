@@ -7,6 +7,8 @@
 #include <cstddef>
 #include <avr/pgmspace.h>
 
+#include "SensorinoUtils.h"
+
 enum MessageType {
     ERR     = 0,
     GARBAGE = 1,
@@ -131,8 +133,6 @@ class Message {
         void addBinaryValue(DataType t, const uint8_t *value, uint8_t len);
 
         /* Accessors for types encoded as floats */
-#define _glue(x, y)  x##y
-#define glue(...) _glue(__VA_ARGS__)
 #define int(...)
 #define bool(...)
 #define float(CamelName) \

@@ -229,12 +229,6 @@ Service *Sensorino::getServiceByNum(int num) {
 void Sensorino::die(const prog_char *err) {
     cli();
     Serial.begin(115200);
-#define pgmWrite(stream, string) \
-    { \
-        char buf[strlen_P(string) + 1]; \
-        strcpy_P(buf, string); \
-        stream.write(buf); \
-    }
     pgmWrite(Serial, PSTR("Panic"));
     if (err) {
         pgmWrite(Serial, PSTR(" because: "));

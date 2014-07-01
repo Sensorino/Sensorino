@@ -2,6 +2,7 @@
 //#include <RH_NRF24.h>
 #include "mini-radiohead.h"
 
+#include "SensorinoUtils.h"
 #include "Base.h"
 #include "MessageJsonConverter.h"
 #include "FragmentedDatagram.h"
@@ -13,11 +14,6 @@
 
 #if (CONFIG_INTR_PIN == SS)
 # error Please rewire your nRF24 interrupt to a dfferent pin
-#endif
-
-/* TODO: put all the utils in a header */
-#ifndef unlikely
-# define unlikely(x)	__builtin_expect((x), 0)
 #endif
 
 void watchdogConfig(uint8_t x) {
@@ -138,12 +134,6 @@ ISR(PCINT2_vect, ISR_ALIASOF(PCINT0_vect));
 void Sensorino::die(const prog_char *err) {
     cli();
     Serial.begin(115200);
-#define pgmWrite(stream, string) \
-    { \
-        char buf[strlen_P(string) + 1]; \
-        strcpy_P(buf, string); \
-        stream.write(buf); \
-    }
     pgmWrite(Serial, PSTR("Panic"));
     if (err) {
         pgmWrite(Serial, PSTR(" because: "));

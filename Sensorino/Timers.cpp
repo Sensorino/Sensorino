@@ -9,13 +9,7 @@
 #include <avr/interrupt.h>
 
 #include "Timers.h"
-
-#define likely(x)	__builtin_expect((x), 1)
-#define unlikely(x)	__builtin_expect((x), 0)
-
-#ifndef NULL
-# define NULL 0
-#endif
+#include "SensorinoUtils.h"
 
 Timers::Timers(void) {}
 Timers::init Timers::initializer;
