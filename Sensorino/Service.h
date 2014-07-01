@@ -39,11 +39,11 @@ protected:
     /* Service implementations use this to start a new ERR message.
      * When done constructing the contents, they'll call Message->send();
      */
-    Message *err(Message *message = NULL, DataType type = (DataType) -1);
+    Message *err(Message *message = NULL, Data::Type type = (Data::Type) -1);
 
     /* Start a new message addressed at the Base or at the sender of
      * the original message. */
-    Message *startBaseMessage(MessageType type, Message *orig);
+    Message *startBaseMessage(Message::Type type, Message *orig);
 
 private:
 };

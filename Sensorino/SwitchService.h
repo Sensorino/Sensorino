@@ -2,6 +2,8 @@
 
 #include "Service.h"
 
+using namespace Data;
+
 class SwitchService : public Service {
 public:
     SwitchService(int id, int pin) : Service(id), pin(pin) {
@@ -29,7 +31,7 @@ protected:
     }
 
     void onRequest(Message *message) {
-        DataType req;
+        Type req;
 
         /* If the request has no DataType value, or it's asking for the
          * SWITCH value, just send the current switch state.

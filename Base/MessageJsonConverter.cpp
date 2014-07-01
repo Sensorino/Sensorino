@@ -4,12 +4,14 @@
 #include "MessageJsonConverter.h"
 #include "Expression.h"
 
+using namespace Data;
+
 static char lower(char chr) {
     if (chr >= 'A' && chr <= 'Z')
         return chr - 'A' + 'a';
 }
 
-static bool isEnumType(DataType t) {
+static bool isEnumType(Type t) {
     return t == DATATYPE;
 }
 
@@ -25,23 +27,23 @@ aJsonObject *MessageJsonConverter::messageToJson(Message &m) {
 void MessageJsonConverter::headerToJson(aJsonObject *obj, Message &m) {
     uint8_t from = m.getSrcAddress();
     uint8_t to = m.getDstAddress();
-    MessageType type = m.getType();
+    Message::Type type = m.getType();
     char *typestr = NULL;
 
     switch (type) {
-    case PUBLISH:
+    case Message::PUBLISH:
         typestr = "publish";
         break;
-    case SET:
+    case Message::SET:
         typestr = "set";
         break;
-    case REQUEST:
+    case Message::REQUEST:
         typestr = "request";
         break;
-    case ERR:
+    case Message::ERR:
         typestr = "err";
         break;
-    case GARBAGE:
+    case Message::GARBAGE:
         typestr = "garbage";
         break;
     default:
@@ -57,16 +59,16 @@ void MessageJsonConverter::headerToJson(aJsonObject *obj, Message &m) {
 
 void MessageJsonConverter::payloadToJson(aJsonObject *obj, Message &m) {
     for (Message::iter i = m.begin(); i; m.iterAdvance(i)) {
-        DataType t;
+        Type t;
         uint32_t val;
         const prog_char *cname;
         char name[50];
-        CodingType coding = (CodingType) -1;
+        Message::CodingType coding = (Message::CodingType) -1;
         aJsonObject *parent, *child;
         const prog_char *enumId = NULL;
 
         m.iterGetTypeValue(i, &t, &val);
-        if (t == (DataType) -1)
+        if (t == (Type) -1)
             continue; /* TODO: Add a note in the JSON output */
 
         cname = Message::dataTypeToString(t, &coding) ?: PSTR("Unknown");
@@ -74,15 +76,15 @@ void MessageJsonConverter::payloadToJson(aJsonObject *obj, Message &m) {
         name[0] = lower(name[0]);
 
         switch (coding) {
-        case boolCoding:
+        case Message::boolCoding:
             child = aJson.createItem((char) *(bool *) &val);
             break;
-        case intCoding:
+        case Message::intCoding:
             if (isEnumType(t))
                 switch (t) {
                 case DATATYPE:
                     enumId = Message::dataTypeToString(
-                            (DataType) *(int *) &val, NULL);
+                            (Type) *(int *) &val, NULL);
                     break;
                 }
 
@@ -93,20 +95,20 @@ void MessageJsonConverter::payloadToJson(aJsonObject *obj, Message &m) {
             } else
                 child = aJson.createItem(*(int *) &val);
             break;
-        case floatCoding:
+        case Message::floatCoding:
             child = aJson.createItem((double) *(float *) &val);
             break;
-        case binaryCoding:
+        case Message::binaryCoding:
             switch (t) {
             case MESSAGE:
                 child = aJson.createObject();
                 {
                     Message subMsg;
                     memcpy(subMsg.getWriteBuffer() + HEADERS_LENGTH,
-                            ((BinaryValue *) &val)->value,
-                            ((BinaryValue *) &val)->len);
+                            ((Message::BinaryValue *) &val)->value,
+                            ((Message::BinaryValue *) &val)->len);
                     subMsg.writeLength(HEADERS_LENGTH +
-                            ((BinaryValue *) &val)->len);
+                            ((Message::BinaryValue *) &val)->len);
                     payloadToJson(child, subMsg);
                 }
                 break;
@@ -116,8 +118,8 @@ void MessageJsonConverter::payloadToJson(aJsonObject *obj, Message &m) {
                     child = aJson.createNull();
                     child->type = aJson_String;
                     child->valuestring = exprToString(
-                            ((BinaryValue *) &val)->value,
-                            ((BinaryValue *) &val)->len);
+                            ((Message::BinaryValue *) &val)->value,
+                            ((Message::BinaryValue *) &val)->len);
                 }
                 break;
 
@@ -158,35 +160,35 @@ void MessageJsonConverter::payloadToJson(aJsonObject *obj, Message &m) {
 }
 
 static int messageAddElem(Message &msg, const char *name, aJsonObject *obj) {
-    DataType t = Message::stringToDataType(name);
-    if (t == (DataType) __INT_MAX__)
+    Type t = Message::stringToDataType(name);
+    if (t == (Type) __INT_MAX__)
         return -1;
 
-    CodingType coding = (CodingType) -1;
+    Message::CodingType coding = (Message::CodingType) -1;
     if (!Message::dataTypeToString(t, &coding))
         return -1;
 
     switch (coding) {
-    case boolCoding:
+    case Message::boolCoding:
         if (obj->type != aJson_True && obj->type != aJson_False)
             return -1;
 
         msg.addBoolValue(t, obj->type == aJson_True);
         break;
 
-    case intCoding:
+    case Message::intCoding:
         if (isEnumType(t)) {
-            DataType valuetype;
+            Type valuetype;
 
             switch (t) {
             case DATATYPE:
                 if (obj->type == aJson_String)
                     valuetype = Message::stringToDataType(obj->valuestring);
                 else if (obj->type == aJson_Int)
-                    valuetype = (DataType) obj->valueint;
+                    valuetype = (Type) obj->valueint;
                 else
                     return -1;
-                if (valuetype == (DataType) __INT_MAX__)
+                if (valuetype == (Type) __INT_MAX__)
                     return -1;
 
                 msg.addDataTypeValue(valuetype);
@@ -199,7 +201,7 @@ static int messageAddElem(Message &msg, const char *name, aJsonObject *obj) {
 
         break;
 
-    case floatCoding:
+    case Message::floatCoding:
         if (obj->type != aJson_Int && obj->type != aJson_Float)
             return -1;
 
@@ -207,7 +209,7 @@ static int messageAddElem(Message &msg, const char *name, aJsonObject *obj) {
                 obj->valueint : obj->valuefloat);
         break;
 
-    case binaryCoding:
+    case Message::binaryCoding:
         switch (t) {
         case MESSAGE:
             if (obj->type != aJson_Object)
@@ -273,13 +275,13 @@ Message *MessageJsonConverter::jsonToMessage(aJsonObject &obj) {
         goto err;
 
     if (!strcmp(val->valuestring, "publish"))
-        msg->setType(PUBLISH);
+        msg->setType(Message::PUBLISH);
     else if (!strcmp(val->valuestring, "set"))
-        msg->setType(SET);
+        msg->setType(Message::SET);
     else if (!strcmp(val->valuestring, "request"))
-        msg->setType(REQUEST);
+        msg->setType(Message::REQUEST);
     else if (!strcmp(val->valuestring, "err"))
-        msg->setType(ERR);
+        msg->setType(Message::ERR);
     else
         goto err;
 
@@ -431,7 +433,7 @@ void subexprToString(char *&str, const uint8_t *&buf, uint8_t &len) {
     case VAL_VARIABLE:
     case VAL_PREVIOUS:
         varServId = *buf++;
-        varType = (DataType) *buf++;
+        varType = (Type) *buf++;
         varNum = *buf++;
         len -= 3;
 
@@ -440,8 +442,7 @@ void subexprToString(char *&str, const uint8_t *&buf, uint8_t &len) {
 
         numToStr(str, varServId);
         *str++ = ':';
-        name = Message::dataTypeToString((DataType) varType, NULL) ?:
-            PSTR("fixme");
+        name = Message::dataTypeToString((Type) varType, NULL) ?: PSTR("fixme");
         strcpy_P(str, name);
         str += strlen_P(name);
         *str++ = ':';
@@ -549,7 +550,7 @@ static void valueFromString(uint8_t *&buf, const char *&str) {
         if (*str++ != ':')
             return;
 
-        /* DataType byte */
+        /* Data::Type byte */
         while (*str != ':' && *str != '\0' && len < sizeof(name) - 1)
             name[len++] = *str++;
         name[len] = '\0';

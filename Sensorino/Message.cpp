@@ -32,15 +32,18 @@ const uint8_t extendedType = BER_APPLICATION | 0b011111;
     const char glue(Camel, _pgm_name)[] PROGMEM = #Camel;
 DATATYPE_LIST_APPLY(NAME_PGM_STR)
 
+using namespace Data;
+
 static const struct TypeInfo {
-    DataType val;
+    Data::Type val;
     const prog_char *name;
-    CodingType coding;
+    Message::CodingType coding;
 } typeTable[] PROGMEM = {
 #define TYPEINFO_INITIALISER(intval, CAPS, Camel, coding) \
-    { CAPS, glue(Camel, _pgm_name), glue(coding, Coding) },
+    { CAPS, glue(Camel, _pgm_name), Message::glue(coding, Coding) },
 DATATYPE_LIST_APPLY(TYPEINFO_INITIALISER)
-    { (DataType) __INT_MAX__, NULL, (enum CodingType) -1 }, /* Sentinel */
+    { (Data::Type) __INT_MAX__, NULL,
+        (enum Message::CodingType) -1 }, /* Sentinel */
 };
 
 #define pgm_read_enum(addr) ((int) pgm_read_word(addr))
@@ -48,7 +51,7 @@ DATATYPE_LIST_APPLY(TYPEINFO_INITIALISER)
 
 /* Note: non-threadsafe */
 static TypeInfo typeInfoBuf;
-static const struct TypeInfo *getTypeInfo(DataType type) {
+static const struct TypeInfo *getTypeInfo(Data::Type type) {
     const struct TypeInfo PROGMEM *i = typeTable;
 
     while (type > pgm_read_enum(&i->val))
@@ -58,7 +61,7 @@ static const struct TypeInfo *getTypeInfo(DataType type) {
     return type == typeInfoBuf.val ? &typeInfoBuf : NULL;
 }
 
-const char *Message::dataTypeToString(DataType type, CodingType *coding) {
+const char *Message::dataTypeToString(Data::Type type, CodingType *coding) {
     const struct TypeInfo *i = getTypeInfo(type);
 
     if (coding && i)
@@ -67,14 +70,14 @@ const char *Message::dataTypeToString(DataType type, CodingType *coding) {
     return i ? i->name : NULL;
 }
 
-DataType Message::stringToDataType(const char *str) {
+Data::Type Message::stringToDataType(const char *str) {
     const struct TypeInfo PROGMEM *i = typeTable;
 
     while (pgm_read_enum(&i->val) < __INT_MAX__ &&
             strcasecmp_P(str, pgm_read_cptr(&i->name)))
         i++;
 
-    return (DataType) pgm_read_enum(&i->val);
+    return (Data::Type) pgm_read_enum(&i->val);
 }
 
 uint8_t Message::staticId;
@@ -143,11 +146,11 @@ void Message::setDstAddress(uint8_t addr) {
     raw[1] = addr;
 }
 
-MessageType Message::getType(void){
-    return (MessageType) raw[2];
+Message::Type Message::getType(void){
+    return (Message::Type) raw[2];
 }
 
-void Message::setType(MessageType t){
+void Message::setType(Message::Type t){
     raw[2] = t;
 }
 
@@ -173,7 +176,7 @@ void Message::writeLength(int len) {
 #define FLOAT_TYPE(t) (t >= ACCELERATION && t < COUNT)
 #define BINARY_TYPE(t) (t == EXPRESSION || t == MESSAGE)
 
-int Message::find(DataType t, int num, void *value) {
+int Message::find(Data::Type t, int num, void *value) {
     int pos = HEADERS_LENGTH, len;
     unsigned int tval;
 
@@ -191,7 +194,7 @@ int Message::find(DataType t, int num, void *value) {
             }
             tval |= raw[pos++];
         }
-        if ((DataType) tval != t || num--) {
+        if ((Data::Type) tval != t || num--) {
             /* Skip this TLV */
             len = raw[pos++];
             pos += len;
@@ -257,7 +260,7 @@ void Message::checkIntegrity(void) {
     }
 }
 
-static uint8_t appendTypePart(uint8_t *buffer, DataType t) {
+static uint8_t appendTypePart(uint8_t *buffer, Data::Type t) {
     unsigned int tval = ((unsigned int) (int) t) >> 7;
     uint8_t len, ret;
 
@@ -293,7 +296,7 @@ static uint8_t appendIntValuePart(uint8_t *buffer, int value) {
     return ret;
 }
 
-void Message::addIntValue(DataType t, int value){
+void Message::addIntValue(Data::Type t, int value){
     /* Type */
     rawLen += appendTypePart(raw + rawLen, t);
 
@@ -305,7 +308,7 @@ void Message::addIntValue(DataType t, int value){
     checkIntegrity();
 }
 
-void Message::addFloatValue(DataType t, float value){
+void Message::addFloatValue(Data::Type t, float value){
     /* Type */
     rawLen += appendTypePart(raw + rawLen, t);
 
@@ -321,11 +324,11 @@ void Message::addFloatValue(DataType t, float value){
     checkIntegrity();
 }
 
-void Message::addDataTypeValue(DataType t) {
+void Message::addDataTypeValue(Data::Type t) {
     addIntValue(DATATYPE, t);
 }
 
-void Message::addBoolValue(DataType t, bool value) {
+void Message::addBoolValue(Data::Type t, bool value) {
     /* Type */
     rawLen += appendTypePart(raw + rawLen, t);
 
@@ -336,7 +339,7 @@ void Message::addBoolValue(DataType t, bool value) {
     checkIntegrity();
 }
 
-void Message::addBinaryValue(DataType t, const uint8_t *value, uint8_t len) {
+void Message::addBinaryValue(Data::Type t, const uint8_t *value, uint8_t len) {
     /* Type */
     rawLen += appendTypePart(raw + rawLen, t);
 
@@ -390,15 +393,15 @@ void Message::iterAdvance(Message::iter &i) {
     }
 }
 
-void Message::iterGetTypeValue(Message::iter i, DataType *type, void *val) {
-    DataType t;
+void Message::iterGetTypeValue(Message::iter i, Data::Type *type, void *val) {
+    Data::Type t;
     unsigned int tval = 0;
     uint8_t len;
 
     /* Read type */
 #ifdef BER_COMPAT
     if (raw[i++] != extendedType) {
-        *type = (DataType) -1;
+        *type = (Data::Type) -1;
         return;
     }
 #endif
@@ -408,7 +411,7 @@ void Message::iterGetTypeValue(Message::iter i, DataType *type, void *val) {
         tval <<= 7;
     }
     tval |= raw[i++];
-    t = (DataType) tval;
+    t = (Data::Type) tval;
     if (type)
         *type = t;
 
@@ -444,7 +447,7 @@ void Message::iterGetTypeValue(Message::iter i, DataType *type, void *val) {
     }
 }
 
-float Message::toFloat(DataType t, void *val) {
+float Message::toFloat(Data::Type t, void *val) {
     if (BOOL_TYPE(t))
         return (*(bool *) val) ? 1.0f : 0.0f;
     else if (INT_TYPE(t))

@@ -6,6 +6,8 @@
 #define IS_TRUE(flt) (flt > 0.5f)
 #define IS_ZERO(flt) ((flt) < EPSILON && -(flt) < EPSILON)
 
+using namespace Data;
+
 class RuleService : public Service {
 public:
     RuleService() : Service(1) {
@@ -58,7 +60,7 @@ public:
 
                 m.setSrcAddress(sensorino->getAddress());
                 m.setDstAddress(sensorino->getAddress());
-                m.setType(SET);
+                m.setType(Message::SET);
 
                 /* Execute the action */
                 sensorino->handleMessage(m);
@@ -83,7 +85,7 @@ protected:
     /* TODO: this will be mapped directly to EEPROM, not stored in RAM */
     uint8_t buffer[128];
     struct CachedValue {
-        DataType type;
+        Type type;
         uint8_t serviceId;
         uint8_t num;
         float value;
@@ -98,7 +100,7 @@ protected:
 
     void onSet(Message *message) {
         int ruleId, offset;
-        BinaryValue condition, action;
+        Message::BinaryValue condition, action;
 
         if (!message->find(COUNT, 0, &ruleId)) {
             err(message, COUNT)->send();
@@ -140,7 +142,7 @@ protected:
     void onRequest(Message *message) {
         int ruleId, offset;
         uint8_t num, typeExpr, typeMsg, typeType;
-        DataType dt;
+        Type dt;
 
         /* See what data types are being requested */
         while (message->find(DATATYPE, num++, &dt))
@@ -202,7 +204,7 @@ protected:
     }
 
     void createRule(uint8_t ruleId,
-            BinaryValue &condition, BinaryValue &action) {
+            Message::BinaryValue &condition, Message::BinaryValue &action) {
         int offset;
 
         /* Find empty space in the buffer */
@@ -271,7 +273,7 @@ protected:
         float op1, op2, diff, ret;
 
         uint8_t varServId, varNum, i, b;
-        DataType varType;
+        Type varType;
         int16_t intVal;
 
         using namespace Expression;
@@ -297,7 +299,7 @@ protected:
         case VAL_VARIABLE:
         case VAL_PREVIOUS:
             varServId = getByte(expr++);
-            varType = (DataType) getByte(expr++);
+            varType = (Type) getByte(expr++);
             varNum = getByte(expr++);
             return getVariableValue(m, servId, varServId, varType, varNum,
                     useMask, op == VAL_VARIABLE);
@@ -389,7 +391,7 @@ protected:
     }
 
     float getVariableValue(Message &m, uint8_t servId,
-            uint8_t varServId, DataType t, uint8_t num,
+            uint8_t varServId, Type t, uint8_t num,
             uint32_t &useMask, bool useCurrent) {
         /* Check if we have this variable's value cached */
         struct CachedValue *v = findVariable(varServId, t, num);
@@ -418,7 +420,7 @@ protected:
         return v ? v->value : NAN;
     }
 
-    CachedValue *findVariable(uint8_t servId, DataType type, uint8_t num) {
+    CachedValue *findVariable(uint8_t servId, Type type, uint8_t num) {
         struct CachedValue *v;
         for (v = valueCache; v < valueCache + ARRAY_SIZE(valueCache); v++)
             if (v->serviceId == servId && v->type == type && v->num == num)
@@ -426,7 +428,7 @@ protected:
         return NULL;
     }
 
-    CachedValue *cacheVariable(uint8_t servId, DataType type, uint8_t num) {
+    CachedValue *cacheVariable(uint8_t servId, Type type, uint8_t num) {
         struct CachedValue *v;
         for (v = valueCache; v < valueCache + ARRAY_SIZE(valueCache); v++)
             if (v->serviceId == 0xff) {

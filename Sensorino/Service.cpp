@@ -7,10 +7,10 @@ Service::Service(int _id) : id(_id) {
 
 void Service::handleMessage(Message *message) {
     switch (message->getType()) {
-    case SET:
+    case Message::SET:
         return onSet(message);
 
-    case REQUEST:
+    case Message::REQUEST:
         /* NOTE: some things, like the current state request or
          * description request may be implemented here so as to
          * remove this burden from Service implementers.
@@ -27,22 +27,22 @@ Message *Service::publish(Message *message) {
     /* NOTE: we may want to reference the original message Id in the
      * response somehow.
      */
-    return startBaseMessage(PUBLISH, message);
+    return startBaseMessage(Message::PUBLISH, message);
 }
 
-Message *Service::err(Message *message, DataType type) {
+Message *Service::err(Message *message, Data::Type type) {
     /* NOTE: we may want to reference the original message Id in the
      * response somehow.
      */
-    Message *m = startBaseMessage(ERR, message);
+    Message *m = startBaseMessage(Message::ERR, message);
 
-    if (type != (DataType) -1)
+    if (type != (Data::Type) -1)
         m->addDataTypeValue(type);
 
     return m;
 }
 
-Message *Service::startBaseMessage(MessageType type, Message *orig) {
+Message *Service::startBaseMessage(Message::Type type, Message *orig) {
     /* NOTE: internal messages (not transmitted over radio.. where
      * sender == addressee) may be implemented here or somewhere else.
      */
@@ -58,7 +58,7 @@ Message *Service::startBaseMessage(MessageType type, Message *orig) {
 
     msg = new Message(src, dst);
     msg->setType(type);
-    msg->addIntValue(SERVICE_ID, id);
+    msg->addIntValue(Data::SERVICE_ID, id);
     return msg;
 }
 /* vim: set sw=4 ts=4 et: */

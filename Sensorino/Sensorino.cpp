@@ -170,8 +170,8 @@ void Sensorino::handleMessage(Message &msg) {
 
     if (!targetSvc) {
         Message err(getAddress(), getBaseAddress());
-        err.setType(ERR);
-        err.addDataTypeValue(SERVICE_ID);
+        err.setType(Message::ERR);
+        err.addDataTypeValue(Data::SERVICE_ID);
         sendMessage(err);
         return;
     }

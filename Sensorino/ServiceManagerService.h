@@ -26,7 +26,7 @@ protected:
                 break;
 
             if (svc->getId() != id)
-                msg->addIntValue(SERVICE_ID, svc->getId());
+                msg->addIntValue(Data::SERVICE_ID, svc->getId());
         };
 
         msg->send();

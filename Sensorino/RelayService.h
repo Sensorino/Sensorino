@@ -2,6 +2,8 @@
 
 #include "Service.h"
 
+using namespace Data;
+
 class RelayService : public Service {
 public:
     RelayService(int id, int pin, bool init_state=0) : Service(id), pin(pin) {
@@ -26,7 +28,7 @@ protected:
     }
 
     void onRequest(Message *message) {
-        DataType req;
+        Data::Type req;
 
         if (!message->find(DATATYPE, 0, &req) || req == SWITCH) {
             Message *msg = publish(message);

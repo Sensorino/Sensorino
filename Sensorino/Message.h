@@ -9,17 +9,6 @@
 
 #include "SensorinoUtils.h"
 
-enum MessageType {
-    ERR     = 0,
-    GARBAGE = 1,
-    PUBLISH = 2,
-    SET     = 3,
-    REQUEST = 4,
-    ACK     = 5,
-    STREAM  = 6,
-    CONFIG  = 7,
-};
-
 #define DATATYPE_LIST_APPLY(F)	\
     /* Metatypes */\
     F(0, DATATYPE, DataType, int)\
@@ -59,22 +48,12 @@ enum MessageType {
     F(51, PRESENCE, Presence, bool)\
     F(52, SWITCH, Switch, bool)
 
-enum DataType {
+namespace Data {
+    enum Type {
 #define CAPS_ENUM(intval, CAPS, Camel, coding) \
-    CAPS = intval,
+        CAPS = intval,
 DATATYPE_LIST_APPLY(CAPS_ENUM)
-};
-
-enum CodingType {
-    intCoding,
-    floatCoding,
-    boolCoding,
-    binaryCoding,
-};
-
-struct BinaryValue {
-    uint8_t *value;
-    uint8_t len;
+    };
 };
 
 #define HEADERS_LENGTH 4
@@ -84,6 +63,29 @@ struct BinaryValue {
 
 class Message {
     public:
+        enum Type {
+            ERR     = 0,
+            GARBAGE = 1,
+            PUBLISH = 2,
+            SET     = 3,
+            REQUEST = 4,
+            ACK     = 5,
+            STREAM  = 6,
+            CONFIG  = 7,
+        };
+
+        enum CodingType {
+            intCoding,
+            floatCoding,
+            boolCoding,
+            binaryCoding,
+        };
+
+        struct BinaryValue {
+            uint8_t *value;
+            uint8_t len;
+        };
+
         /* Use this when building a brand new message */
         Message(uint8_t srcAddress, uint8_t dstAddress);
 
@@ -93,9 +95,9 @@ class Message {
         /* Use this to obtain a receive buffer for a new message */
         Message();
 
-        static const prog_char *dataTypeToString(DataType t,
+        static const prog_char *dataTypeToString(Data::Type t,
                 CodingType *coding = NULL);
-        static DataType stringToDataType(const char *str);
+        static Data::Type stringToDataType(const char *str);
 
         /* NOTE: this blocks */
         bool send(void);
@@ -109,8 +111,8 @@ class Message {
         uint8_t getDstAddress();
         void setDstAddress(uint8_t addr);
 
-        MessageType getType(void);
-        void setType(MessageType t);
+        Type getType(void);
+        void setType(Type t);
 
         /* Raw accessors */
         const uint8_t *getRawData(void);
@@ -124,13 +126,13 @@ class Message {
         /* Find @num'th TLV of type @t, decode it and store in @value,
          * @return non-zero on success.
          */
-        int find(DataType t, int num, void *value);
+        int find(Data::Type t, int num, void *value);
 
-        void addFloatValue(DataType t, float value);
-        void addIntValue(DataType t, int value);
-        void addDataTypeValue(DataType t);
-        void addBoolValue(DataType t, bool value);
-        void addBinaryValue(DataType t, const uint8_t *value, uint8_t len);
+        void addFloatValue(Data::Type t, float value);
+        void addIntValue(Data::Type t, int value);
+        void addDataTypeValue(Data::Type t);
+        void addBoolValue(Data::Type t, bool value);
+        void addBinaryValue(Data::Type t, const uint8_t *value, uint8_t len);
 
         /* Accessors for types encoded as floats */
 #define int(...)
@@ -150,9 +152,9 @@ DATATYPE_LIST_APPLY(FLOAT_INT_ACCESSOR)
         typedef uint8_t iter;
         iter begin();
         void iterAdvance(iter &i);
-        void iterGetTypeValue(iter i, DataType *type, void *val);
+        void iterGetTypeValue(iter i, Data::Type *type, void *val);
 
-        static float toFloat(DataType t, void *val);
+        static float toFloat(Data::Type t, void *val);
 
     protected:
         uint8_t raw[HEADERS_LENGTH + PAYLOAD_LENGTH];
