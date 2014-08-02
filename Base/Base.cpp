@@ -16,6 +16,8 @@
 # error Please rewire your nRF24 interrupt to a dfferent pin
 #endif
 
+#define USE_NEWLINES
+
 void watchdogConfig(uint8_t x) {
     WDTCSR = _BV(WDCE) | _BV(WDE);
     WDTCSR = x;
@@ -60,6 +62,9 @@ static bool checkJsonError(aJsonObject *obj) {
     }
 
     Serial.write("{\"error\":\"noType\"}");
+#ifdef USE_NEWLINES
+    Serial.write("\r\n");
+#endif
     return 1;
 }
 
@@ -85,11 +90,19 @@ void Base::loop() {
             /* Succesfully converted to Message */
             if (msg) {
                 if (!radioManager.sendtoWait((uint8_t *) msg->getRawData(),
-                        msg->getRawLength(), msg->getDstAddress()))
+                        msg->getRawLength(), msg->getDstAddress())) {
                     Serial.write("{\"error\":\"xmitError\"}");
+#ifdef USE_NEWLINES
+                    Serial.write("\r\n");
+#endif
+                }
                 delete msg;
-            } else if (jsonOk)
+            } else if (jsonOk) {
                 Serial.write("{\"error\":\"structError\"}");
+#ifdef USE_NEWLINES
+                Serial.write("\r\n");
+#endif
+            }
         }
     }
 
@@ -107,6 +120,9 @@ void Base::loop() {
             if (obj) {
                 /* FIXME this blocks */
                 aJson.print(obj, &aJsonSerial);
+#ifdef USE_NEWLINES
+                Serial.write("\r\n");
+#endif
                 aJson.deleteItem(obj);
             }
         }
