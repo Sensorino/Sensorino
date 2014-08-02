@@ -13,11 +13,12 @@
 # define NULL 0
 #endif
 
-#define pgmWrite(stream, string) \
-{ \
-    char buf[strlen_P(string) + 1]; \
-    strcpy_P(buf, string); \
-    stream.write(buf); \
+#include <Arduino.h>
+
+static void pgmWrite(Stream &stream, const char *string) { \
+    char buf[strlen_P(string) + 1];
+    strcpy_P(buf, string);
+    stream.write(buf);
 }
 
 /* Maths */
