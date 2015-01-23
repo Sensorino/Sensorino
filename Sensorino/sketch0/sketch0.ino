@@ -1,3 +1,13 @@
+/*
+ * Basic theoretical example that sets up a node at address 10 with one
+ * "Relay" service representing a digital output pin.  The main loop then
+ * flips the value of the digital pin (which can be connected to an
+ * actual relay controlling some home appliance, for example) every two
+ * seconds, by simulating a radio message from the Sensorino server
+ * that executes the relay command.  Of course you normally don't need
+ * to do that in the sketch, it'd be a task for the server or the local
+ * rule engine that are easily programmable from a nice User Interface.
+ */
 //#include <SPI.h>
 //#include <RH_NRF24.h>
 #include <Sensorino.h>
@@ -5,7 +15,7 @@
 #include <Timers.h>
 
 Sensorino s;
-RelayService rs(1, 13, 0); /* The onboard LED is the "relay" */
+RelayService rs(2, 13, 0); /* The onboard LED is the "relay" */
 
 void setup() {
   s.setAddress(10);
@@ -24,8 +34,5 @@ void loop() {
   m.addIntValue(SERVICE_ID, rs.getId());
   m.addBoolValue(SWITCH, on);
 
-  const uint8_t *raw = m.getRawData();
-  int len = m.getRawLength();
-
-  s.handleMessage(raw, len);
+  s.handleMessage(m);
 }
