@@ -54,7 +54,10 @@ void MessageJsonConverter::headerToJson(aJsonObject *obj, Message &m) {
         aJson.addStringToObject(obj, "type", typestr);
     else
         aJson.addNumberToObject(obj, "type", type);
+
     aJson.addNumberToObject(obj, "from", from);
+    if (to != 0)
+        aJson.addNumberToObject(obj, "to", to);
 }
 
 void MessageJsonConverter::payloadToJson(aJsonObject *obj, Message &m) {
