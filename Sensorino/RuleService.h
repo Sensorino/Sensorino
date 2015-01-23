@@ -66,6 +66,9 @@ public:
                 m.setDstAddress(sensorino->getAddress());
                 m.setType(Message::SET);
 
+                /* Inform the Base first */
+                sensorino->sendMessage(m);
+
                 /* Execute the action */
                 sensorino->handleMessage(m);
             }

@@ -142,21 +142,25 @@ volatile uint8_t Sensorino::radioBusy = 0;
 
 bool Sensorino::sendMessage(Message &m) {
     bool ret;
+    uint8_t dest = m.getDstAddress();
 
-    /* Ignore messages addressed at ourselves, such as responses to events */
-    if (m.getDstAddress() == getAddress())
-        return 0;
+    /* Note if we were to ignore messages addressed at ourselves, such as
+     * responses to events, we can do a m.getDstAddress() != getAddress()
+     * check here.  Currently we want the Base to see such messages though.
+     */
+    if (dest == getAddress())
+        dest = getBaseAddress();
 
     radioBusy++;
     ret = radioManager->sendtoWait((uint8_t *) m.getRawData(),
-            m.getRawLength(), m.getDstAddress());
+            m.getRawLength(), dest);
+
+    if (m.getType() == Message::PUBLISH && ruleEngine)
+        ruleEngine->evalPublish(m); /* Note: may recurse */
     radioBusy--;
 
-    if (ruleEngine)
-        ruleEngine->evalPublish(m);
-
     if (!radioBusy)
-        radioOpDone();
+        radioOpDone(); /* Note: also may recurse (should use bottom halves) */
 
     return ret;
 }
