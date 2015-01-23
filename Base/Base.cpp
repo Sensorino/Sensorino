@@ -57,6 +57,9 @@ static bool checkJsonError(aJsonObject *obj) {
     if (aJson.getObjectItem(obj, "error")) {
         char *str = aJson.print(obj);
         Serial.write(str);
+#ifdef USE_NEWLINES
+        Serial.write("\r\n");
+#endif
         free(str);
         return 1;
     }
