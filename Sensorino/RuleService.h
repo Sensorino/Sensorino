@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <avr/eeprom.h>
 
 #include "Service.h"
 #include "Expression.h"
@@ -8,11 +9,14 @@
 
 using namespace Data;
 
+/* Use EEPROM for rule storage, rather than RAM */
+#define EEPROM
+
 class RuleService : public Service {
 public:
     RuleService() : Service(1) {
-        /* Mark rule storage as empty */
-        setByte(0, 0xff);
+        /* Check if rule storage is initialised and possilby reset it */
+        validateStore();
 
         /* Mark all entries in variable cache as empty */
         for (uint8_t i = 0; i < ARRAY_SIZE(valueCache); i++)
@@ -82,8 +86,6 @@ public:
     }
 
 protected:
-    /* TODO: this will be mapped directly to EEPROM, not stored in RAM */
-    uint8_t buffer[128];
     struct CachedValue {
         Type type;
         uint8_t serviceId;
@@ -91,12 +93,52 @@ protected:
         float value;
     } valueCache[10];
 
+#ifndef EEPROM
+#define RULE_STORE_SIZE 128
+    uint8_t buffer[RULE_STORE_SIZE];
+
     uint8_t getByte(int offset) {
         return buffer[offset];
     }
-    uint8_t setByte(int offset, uint8_t val) {
+    void setByte(int offset, uint8_t val) {
         buffer[offset] = val;
     }
+    void validateStore(void) {
+        /* Mark rule storage as empty to initialise it */
+        setByte(0, 0xff);
+    }
+#else
+#define BASE_ADDR 64
+#define RULE_STORE_SIZE (511 - BASE_ADDR)
+
+    uint8_t getByte(int addr) {
+        while (!eeprom_is_ready());
+
+        EEAR = BASE_ADDR + addr;
+        EECR |= 1 << EERE;	/* Start eeprom read by writing EERE */
+
+        return EEDR;
+    }
+
+    void setByte(int addr, uint8_t val) {
+        while (!eeprom_is_ready());
+
+        EEAR = BASE_ADDR + addr;
+        EEDR = val;
+        EECR |= 1 << EEMPE;	/* Write logical one to EEMPE */
+        EECR |= 1 << EEPE;	/* Start eeprom write by setting EEPE */
+    }
+
+    void validateStore(void) {
+        /* Check if magic value present after the end of our EEPROM space */
+        if (getByte(RULE_STORE_SIZE) == 0xab)
+            return;
+
+        /* Mark rule storage as empty and write magic value */
+        setByte(0, 0xff);
+        setByte(RULE_STORE_SIZE, 0xab);
+    }
+#endif
 
     void onSet(Message *message) {
         int ruleId, offset;
@@ -114,8 +156,8 @@ protected:
             if (offset < 0)
                 err(message, COUNT)->send();
 
-            /* TODO: delete rule ruleId */
-            err(message)->send();
+            /* Delete this rule and everything after it... */
+            setByte(offset, 0xff);
             return;
         }
 
@@ -210,7 +252,7 @@ protected:
         /* Find empty space in the buffer */
         offset = findRule(0xff);
 
-        if (offset + 4 + condition.len + action.len > sizeof(buffer)) {
+        if (offset + 4 + condition.len + action.len > RULE_STORE_SIZE) {
             err()->send();
             return;
         }
