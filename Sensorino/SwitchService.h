@@ -1,8 +1,11 @@
 #include <Arduino.h>
 
 #include "Service.h"
+#include "Timers.h"
 
 using namespace Data;
+
+#define DEBOUNCE 12 /* Debounce over 12 ms */
 
 class SwitchService : public Service {
 public:
@@ -57,6 +60,18 @@ protected:
     }
 
     void pinHandler(int pin) {
+#ifdef DEBOUNCE
+        uint8_t state = digitalRead(pin), count = 0;
+        /* Wait until the pin reports the same value in N read()s in a row */
+        while (++count < DEBOUNCE) {
+            Timers::delay(1);
+            if (digitalRead(pin) != state) {
+                state = !state;
+                count = 0;
+            }
+        }
+#endif
+
         publishSwitch();
     }
 };
