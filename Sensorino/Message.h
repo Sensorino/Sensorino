@@ -69,9 +69,6 @@ class Message {
             PUBLISH = 2,
             SET     = 3,
             REQUEST = 4,
-            ACK     = 5,
-            STREAM  = 6,
-            CONFIG  = 7,
         };
 
         enum CodingType {
