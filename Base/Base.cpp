@@ -64,7 +64,7 @@ static bool checkJsonError(aJsonObject *obj) {
         return 1;
     }
 
-    pgmWrite(Serial, PSTR("{\"error\":\"noType\"}"));
+    Serial.write("{\"error\":\"noType\"}");
 #ifdef USE_NEWLINES
     Serial.write("\r\n");
 #endif
@@ -94,14 +94,14 @@ void Base::loop() {
             if (msg) {
                 if (!radioManager.sendtoWait((uint8_t *) msg->getRawData(),
                         msg->getRawLength(), msg->getDstAddress())) {
-                    pgmWrite(Serial, PSTR("{\"error\":\"xmitError\"}"));
+                    Serial.write("{\"error\":\"xmitError\"}");
 #ifdef USE_NEWLINES
                     Serial.write("\r\n");
 #endif
                 }
                 delete msg;
             } else if (jsonOk) {
-                pgmWrite(Serial, PSTR("{\"error\":\"structError\"}"));
+                Serial.write("{\"error\":\"structError\"}");
 #ifdef USE_NEWLINES
                 Serial.write("\r\n");
 #endif

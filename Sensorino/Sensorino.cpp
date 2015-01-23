@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "mini-radiohead.h"
 //#include <RHReliableDatagram.h>
-#if (RH_PLATFORM == RH_PLATFORM_SIMULATOR) 
+#if (RH_PLATFORM == RH_PLATFORM_SIMULATOR)
  // Simulate the sketch on Linux
  #include <MockArduino.h>
  #include <RHutil/simulator.h>
