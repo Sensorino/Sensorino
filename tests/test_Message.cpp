@@ -1,3 +1,9 @@
+/*
+ * Compilation from within the Sensorino subdirectory:
+ * g++ -isystem ../gmock/gmock-1.7.0/gtest/include/ -I ../gmock/gmock-1.7.0/gtest/  -isystem  ../gmock/gmock-1.7.0/include/ -I ../gmock -pthread -I ../libraries/RadioHead -I ../libraries/RadioHead/RHutil  -I . ../tests/test_Message.cpp Message.cpp Sensorino.cpp ../libraries/RadioHead/Dummy.cpp ../libraries/RadioHead/RHGenericDriver.cpp ../libraries/RadioHead/RHReliableDatagram.cpp ../libraries/RadioHead/RHDatagram.cpp ../libraries/RadioHead/RHutil/simulator.cpp  Service.cpp  ../gmock/libgmock.a  -o test
+ *
+ */
+
 #include <Message.h>
 #include <RHutil/simulator.h>
 #include <gmock/gmock.h>

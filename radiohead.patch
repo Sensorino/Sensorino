@@ -1,0 +1,85 @@
+This switches from our internal nRF24L01+ driver to using the
+RadioHead library.  In addition to those changes the unused (by us)
+file RH_ASK.cpp needs to be deleted from the RadioHead directory
+since it reserves an interrupt which later can't be used by anyone
+else.
+
+diff --git a/Base/Base.cpp b/Base/Base.cpp
+index 1234f99..9c8067f 100644
+--- a/Base/Base.cpp
++++ b/Base/Base.cpp
+@@ -1,6 +1,6 @@
+-//#include <RHReliableDatagram.h>
+-//#include <RH_NRF24.h>
+-#include "mini-radiohead.h"
++#include <RHReliableDatagram.h>
++#include <RH_NRF24.h>
++//#include "mini-radiohead.h"
+ 
+ #include "Base.h"
+ #include "MessageJsonConverter.h"
+diff --git a/Sensorino/Sensorino.cpp b/Sensorino/Sensorino.cpp
+index bb84bb4..c92a188 100644
+--- a/Sensorino/Sensorino.cpp
++++ b/Sensorino/Sensorino.cpp
+@@ -1,13 +1,13 @@
+ #include <Arduino.h>
+-#include "mini-radiohead.h"
+-//#include <RHReliableDatagram.h>
++//#include "mini-radiohead.h"
++#include <RHReliableDatagram.h>
+ #if (RH_PLATFORM == RH_PLATFORM_SIMULATOR) 
+  // Simulate the sketch on Linux
+  #include <MockArduino.h>
+  #include <RHutil/simulator.h>
+  #include <Dummy.h>
+ #else
+- //#include <RH_NRF24.h>
++ #include <RH_NRF24.h>
+ #endif
+ 
+ #if (RH_PLATFORM == RH_PLATFORM_SIMULATOR)
+@@ -46,6 +46,14 @@ Sensorino::Sensorino(bool noSM, bool noRE) {
+      * subclass of Config).
+      */
+ 
++    /* Some libraries used by RadioHead may require init() to have run
++     * before them.  If we're being created as a static object, this
++     * constructor will run before main() and thus before init().  As a
++     * band-aid we run init() manually.
++     */
++    init();
++    cli();
++
+     // Class to manage message delivery and receipt, using the driver declared above
+     #if (RH_PLATFORM == RH_PLATFORM_SIMULATOR)
+     RHGenericDriver *radio = new Dummy();
+diff --git a/Sensorino/mini-radiohead.cpp b/Sensorino/mini-radiohead.cpp
+index 9efbcfe..e239ef9 100644
+--- a/Sensorino/mini-radiohead.cpp
++++ b/Sensorino/mini-radiohead.cpp
+@@ -6,6 +6,7 @@
+ 
+ #include <Arduino.h>
+ 
++#if 0
+ #define SPI_DDR		DDRB
+ #define SCK_PIN		(1 << 5)
+ #define MISO_PIN	(1 << 4)
+@@ -432,3 +433,4 @@ bool RHReliableDatagram::recvfromAck(uint8_t *buf, uint8_t *len, uint8_t *from,
+ 
+ 	return 1;
+ }
++#endif
+diff --git a/Sensorino/sketch1/sketch1.ino b/Sensorino/sketch1/sketch1.ino
+index 4b87822..7b05e9a 100644
+--- a/Sensorino/sketch1/sketch1.ino
++++ b/Sensorino/sketch1/sketch1.ino
+@@ -1,5 +1,5 @@
+-//#include <SPI.h>
+-//#include <RH_NRF24.h>
++#include <SPI.h>
++#include <RH_NRF24.h>
+ #include <Sensorino.h>
+ #include <RelayService.h>
+ #include <SwitchService.h>
