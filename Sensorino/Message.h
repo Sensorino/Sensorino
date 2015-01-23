@@ -46,7 +46,8 @@
     /* Other common types */\
     F(50, COUNT, Count, int)\
     F(51, PRESENCE, Presence, bool)\
-    F(52, SWITCH, Switch, bool)
+    F(52, SWITCH, Switch, bool)\
+    F(53, COLOR_COMPONENT, ColorComponent, float)
 
 namespace Data {
     enum Type {
