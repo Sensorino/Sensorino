@@ -1,11 +1,11 @@
 Sensorino firmware
 ==================
 
-This repository contains Arduino-compatible libraries that implement the Sensorino node's logic -- both the remote node's and the central Base node (aka. Gateway).  They implement enough logic that the final sketch may be limited to just a few lines of code that initializes node-specific services, sets their addresses and identifiers.
+See further down for general information about the Sensorino project.  This repository contains Arduino-compatible libraries that implement the _Sensorino node_'s logic -- both the remote node's and the central _Base node_ (aka. Gateway).  They implement enough logic that the final sketch may be limited to just a few lines of code that initializes node-specific services, sets their addresses and identifiers.
 
-The Sensorino subdirectory contains the remote node library and the Base subdirectory contains the base node library.  Both can be installed by copying/symlinking to Arduino's "Libraries" directory or from within the IDE.  Example sketches for both node types can be found in subdirectories named sketch0, sketch1, etc.
+The Sensorino subdirectory contains the remote node library and the Base subdirectory contains the base node library.  Both can be installed by copying/symlinking to Arduino's _"Libraries"_ directory or from within the IDE.  Example sketches for both node types can be found in subdirectories named sketch0, sketch1, etc.
 
-The Base library has one dependency, the excellent aJson library for JSON parsing and generation on Arduino.  It can be installed from its github repository (git clone https://github.com/interactive-matter/aJson.git) or from a submodule of the Sensorino repository.  We also maintain a copy of the RadioHead library which is however optional.  By default Sensorino uses its own minimal nRF24L01+ radio driver.  You can switch to RadioHead to experiment with options such as mesh networking.
+The Base library has one dependency, the excellent _aJson_ library for JSON parsing and generation on Arduino.  It can be installed from its github repository (`git clone https://github.com/interactive-matter/aJson.git`) or from a submodule of the Sensorino repository.  We also maintain a copy of the _RadioHead_ library which is however optional.  By default Sensorino uses its own minimal nRF24L01+ radio driver.  You can switch to RadioHead to experiment with options such as mesh networking.
 
 The Sensorino Project
 =====================
