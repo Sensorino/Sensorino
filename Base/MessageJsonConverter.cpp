@@ -722,10 +722,8 @@ void MessageJsonConverter::putch(uint8_t chr) {
         if (chr <= ' ')
             return;
 
-    if (obj_str_len >= sizeof(obj_str) - 1)
-        return;
-
-    obj_str[obj_str_len++] = chr;
+    if (obj_str_len < sizeof(obj_str) - 1)
+        obj_str[obj_str_len++] = chr;
     /* TODO: multibyte chars */
     if (quote && !escape && chr == '\\')
         escape = 1;
