@@ -718,9 +718,17 @@ MessageJsonConverter::MessageJsonConverter() {
 }
 
 void MessageJsonConverter::putch(uint8_t chr) {
-    if (!quote)
-        if (chr <= ' ')
+    if (chr <= ' ') {
+        /* Reset parser state on a null-byte. TODO: also do this on a BREAK */
+        if (chr == '\0') {
+            obj_str_len = 0;
+            nest_depth = 0;
+            quote = 0;
+            escape = 0;
+        }
+        if (!quote)
             return;
+    }
 
     if (obj_str_len < sizeof(obj_str) - 1)
         obj_str[obj_str_len++] = chr;
