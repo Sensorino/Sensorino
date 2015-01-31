@@ -1,0 +1,201 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="800px" height="290px" version="1.1" viewBox="-15 -15 800 290">
+  <defs/>
+  <filter id="dropshadow" x="-50%" y="-50%" height="200%" width="200%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="9" result="bl"/>
+    <feComponentTransfer>
+      <feFuncA type="linear" slope="0.6"/>
+    </feComponentTransfer>
+    <feMerge>
+      <feMergeNode />
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+    <rect x="131" y="101" width="130" height="60" rx="9" ry="9" fill="#fff" pointer-events="none" style="filter: url(#dropshadow)" />
+    <g transform="translate(131,116)">
+      <switch>
+        <foreignObject pointer-events="all" width="130" height="32" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; font-size: 12px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.26; vertical-align: top; width: 130px; white-space: normal; text-align: center;">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit;">Server<br/>(Small linux machine)<br/></div>
+          </div>
+        </foreignObject>
+        <text x="65" y="22" fill="#000000" text-anchor="middle" font-size="12px" font-family="Helvetica">[Not supported by viewer]</text>
+      </switch>
+    </g>
+    <rect x="341" y="106" width="120" height="45" rx="6.75" ry="6.75" fill="#fff" pointer-events="none" style="filter: url(#dropshadow)" />
+    <g transform="translate(347,113)">
+      <switch>
+        <foreignObject pointer-events="all" width="107" height="32" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; font-size: 12px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.26; vertical-align: top; width: 107px; white-space: normal; text-align: center;">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit;">Base node<br/>(Arduino+nRF24)<br/></div>
+          </div>
+        </foreignObject>
+        <text x="54" y="22" fill="#000000" text-anchor="middle" font-size="12px" font-family="Helvetica">[Not supported by viewer]</text>
+      </switch>
+    </g>
+    <g transform="translate(265,117)">
+      <switch>
+        <foreignObject pointer-events="all" width="73" height="27" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; font-size: 10px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.26; vertical-align: top; white-space: nowrap; text-align: center;">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit;">Serial or<br/>TCP/IP + Serial<br/></div>
+          </div>
+        </foreignObject>
+        <text x="37" y="19" fill="#000000" text-anchor="middle" font-size="10px" font-family="Helvetica">[Not supported by viewer]</text>
+      </switch>
+    </g>
+    <rect x="1" y="61" width="90" height="40" rx="6" ry="6" fill="#ffffff"  style="filter: url(#dropshadow)" pointer-events="none"/>
+    <g transform="translate(19,73)">
+      <switch>
+        <foreignObject pointer-events="all" width="54" height="17" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; font-size: 11px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.26; vertical-align: top; width: 54px; white-space: normal; text-align: center;">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit;">
+              <font style="font-size: 12px">Client 1<br/></font>
+            </div>
+          </div>
+        </foreignObject>
+        <text x="27" y="14" fill="#000000" text-anchor="middle" font-size="11px" font-family="Helvetica">[Not supported by viewer]</text>
+      </switch>
+    </g>
+    <rect x="1" y="161" width="90" height="40" rx="6" ry="6" fill="#ffffff"  style="filter: url(#dropshadow)" pointer-events="none"/>
+    <g transform="translate(18,173)">
+      <switch>
+        <foreignObject pointer-events="all" width="56" height="17" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; font-size: 11px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.26; vertical-align: top; width: 56px; white-space: normal; text-align: center;">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit;">
+              <font style="font-size: 12px">Client N<br/></font>
+            </div>
+          </div>
+        </foreignObject>
+        <text x="28" y="14" fill="#000000" text-anchor="middle" font-size="11px" font-family="Helvetica">[Not supported by viewer]</text>
+      </switch>
+    </g>
+    <g transform="translate(96,116)">
+      <switch>
+        <foreignObject pointer-events="all" width="32" height="40" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; font-size: 10px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.26; vertical-align: top; white-space: nowrap; text-align: center;">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit;">Web,<br/>REST,<br/>...<br/></div>
+          </div>
+        </foreignObject>
+        <text x="16" y="25" fill="#000000" text-anchor="middle" font-size="10px" font-family="Helvetica">[Not supported by viewer]</text>
+      </switch>
+    </g>
+    <rect x="551" y="31" width="110" height="45" rx="6.75" ry="6.75" fill="#ffffff"  style="filter: url(#dropshadow)" pointer-events="none"/>
+    <g transform="translate(552,38)">
+      <switch>
+        <foreignObject pointer-events="all" width="107" height="32" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; font-size: 11px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.26; vertical-align: top; width: 107px; white-space: normal; text-align: center;">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit;">
+              <font style="font-size: 12px">Remote node 1<br/>(Arduino+nRF24)<br/></font>
+            </div>
+          </div>
+        </foreignObject>
+        <text x="54" y="22" fill="#000000" text-anchor="middle" font-size="11px" font-family="Helvetica">[Not supported by viewer]</text>
+      </switch>
+    </g>
+    <g transform="translate(470,122)">
+      <switch>
+        <foreignObject pointer-events="all" width="63" height="15" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; font-size: 10px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.26; vertical-align: top; white-space: nowrap; text-align: center;">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit;">2.4GHz radio<br/></div>
+          </div>
+        </foreignObject>
+        <text x="32" y="13" fill="#000000" text-anchor="middle" font-size="10px" font-family="Helvetica">[Not supported by viewer]</text>
+      </switch>
+    </g>
+    <rect x="691" y="1" width="70" height="30" rx="4.5" ry="4.5" fill="#ffffff"  style="filter: url(#dropshadow)" pointer-events="none"/>
+    <g transform="translate(689,2)">
+      <switch>
+        <foreignObject pointer-events="all" width="74" height="30" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; font-size: 11px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.26; vertical-align: top; width: 74px; white-space: normal; text-align: center;">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit;">Sensor or<br/>or actuator 1<br/></div>
+          </div>
+        </foreignObject>
+        <text x="37" y="21" fill="#000000" text-anchor="middle" font-size="11px" font-family="Helvetica">[Not supported by viewer]</text>
+      </switch>
+    </g>
+    <rect x="691" y="76" width="70" height="30" rx="4.5" ry="4.5" fill="#ffffff"  style="filter: url(#dropshadow)" pointer-events="none"/>
+    <g transform="translate(688,77)">
+      <switch>
+        <foreignObject pointer-events="all" width="75" height="30" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; font-size: 11px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.26; vertical-align: top; width: 75px; white-space: normal; text-align: center;">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit;">Sensor or<br/>or actuator K<br/></div>
+          </div>
+        </foreignObject>
+        <text x="38" y="21" fill="#000000" text-anchor="middle" font-size="11px" font-family="Helvetica">[Not supported by viewer]</text>
+      </switch>
+    </g>
+    <g transform="translate(665,43)">
+      <switch>
+        <foreignObject pointer-events="all" width="73" height="25" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; font-size: 9px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.26; vertical-align: top; white-space: nowrap; text-align: center;">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit;">
+              <div align="left">I&#xB2;C, ADC, GPIO,<br/></div>
+              <div align="left">UART, PWM, ...<br/></div>
+            </div>
+          </div>
+        </foreignObject>
+        <text x="37" y="17" fill="#000000" text-anchor="middle" font-size="9px" font-family="Helvetica">[Not supported by viewer]</text>
+      </switch>
+    </g>
+    <rect x="551" y="181" width="110" height="45" rx="6.75" ry="6.75" fill="#ffffff"  style="filter: url(#dropshadow)" pointer-events="none"/>
+    <g transform="translate(552,188)">
+      <switch>
+        <foreignObject pointer-events="all" width="107" height="32" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; font-size: 11px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.26; vertical-align: top; width: 107px; white-space: normal; text-align: center;">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit;">
+              <font style="font-size: 12px">Remote node M<br/>(Arduino+nRF24)<br/></font>
+            </div>
+          </div>
+        </foreignObject>
+        <text x="54" y="22" fill="#000000" text-anchor="middle" font-size="11px" font-family="Helvetica">[Not supported by viewer]</text>
+      </switch>
+    </g>
+    <rect x="691" y="151" width="70" height="30" rx="4.5" ry="4.5" fill="#ffffff"  style="filter: url(#dropshadow)" pointer-events="none"/>
+    <g transform="translate(689,152)">
+      <switch>
+        <foreignObject pointer-events="all" width="74" height="30" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; font-size: 11px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.26; vertical-align: top; width: 74px; white-space: normal; text-align: center;">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit;">Sensor or<br/>or actuator 1<br/></div>
+          </div>
+        </foreignObject>
+        <text x="37" y="21" fill="#000000" text-anchor="middle" font-size="11px" font-family="Helvetica">[Not supported by viewer]</text>
+      </switch>
+    </g>
+    <rect x="691" y="226" width="70" height="30" rx="4.5" ry="4.5" fill="#ffffff"  style="filter: url(#dropshadow)" pointer-events="none"/>
+    <g transform="translate(690,227)">
+      <switch>
+        <foreignObject pointer-events="all" width="71" height="30" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; font-size: 11px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.26; vertical-align: top; width: 71px; white-space: normal; text-align: center;">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit;">Sensor or<br/>or actuator I<br/></div>
+          </div>
+        </foreignObject>
+        <text x="36" y="21" fill="#000000" text-anchor="middle" font-size="11px" font-family="Helvetica">[Not supported by viewer]</text>
+      </switch>
+    </g>
+    <g transform="translate(665,193)">
+      <switch>
+        <foreignObject pointer-events="all" width="73" height="25" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+          <div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; font-size: 9px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.26; vertical-align: top; white-space: nowrap; text-align: center;">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit;">
+              <div align="left">I&#xB2;C, ADC, GPIO,<br/></div>
+              <div align="left">UART, PWM, ...<br/></div>
+            </div>
+          </div>
+        </foreignObject>
+        <text x="37" y="17" fill="#000000" text-anchor="middle" font-size="9px" font-family="Helvetica">[Not supported by viewer]</text>
+      </switch>
+    </g>
+  <g transform="translate(0.5,0.5)">
+    <path d="M 571 134 L 641 134" fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" stroke-dasharray="2 8" transform="rotate(90,606,134)" pointer-events="none"/>
+    <path d="M 551 204 L 461 140" fill="none" stroke="#000000" stroke-miterlimit="10" stroke-dasharray="3 3" pointer-events="none"/>
+    <path d="M 691 241 Q 676 241 676 228 Q 676 215 661 215" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none"/>
+    <path d="M 691 166 Q 676 166 676 179 Q 676 192 661 192" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none"/>
+    <path d="M 691 91 Q 676 91 676 78 Q 676 65 661 65" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none"/>
+    <path d="M 691 16 Q 676 16 676 29 Q 676 42 661 42" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none"/>
+    <path d="M 551 54 L 461 117" fill="none" stroke="#000000" stroke-miterlimit="10" stroke-dasharray="3 3" pointer-events="none"/>
+    <path d="M 91 181 Q 111 181 111 163.5 Q 111 146 131 146" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none"/>
+    <path d="M 261 129 L 341 129" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none"/>
+    <path d="M 28.5 133.5 L 63.5 133.5" fill="none" stroke="#000000" stroke-width="2" stroke-miterlimit="10" stroke-dasharray="2 8" transform="rotate(90,46,133.5)" pointer-events="none"/>
+    <path d="M 91 81 Q 111 81 111 98.5 Q 111 116 131 116" fill="none" stroke="#000000" stroke-miterlimit="10" pointer-events="none"/>
+  </g>
+</svg>
