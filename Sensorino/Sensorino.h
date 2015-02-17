@@ -37,12 +37,19 @@ class Sensorino {
         static void die(const prog_char *err = NULL) __attribute__((noreturn));
 
         /* Since the Atmega only has one IRQ line per port (8 GPIOs)
-         * this function lets a Service handle individual GPIO interrupts
+         * these functions lets a Service handle individual GPIO interrupts
          * by providing a group handler that calls individual handlers as
-         * needed.
+         * needed.  It also simulates level-triggered interrupts.
          */
-        void attachGPIOInterrupt(uint8_t pin, void (*handler)(uint8_t pin));
-        void attachGPIOInterrupt(uint8_t pin, GenIntrCallback *callback);
+        enum InterruptTrigger {
+            EDGE_ANY,
+            LEVEL_LOW,
+            LEVEL_HIGH,
+        };
+        void attachGPIOInterrupt(uint8_t pin, uint8_t trigger,
+                void (*handler)(uint8_t pin));
+        void attachGPIOInterrupt(uint8_t pin, uint8_t trigger,
+                GenIntrCallback *callback);
 
     private:
         uint8_t address;
@@ -59,8 +66,9 @@ class Sensorino {
         static volatile uint8_t radioBusy;
 };
 
-#define attachObjGPIOInterrupt(pin, method) \
-	attachGPIOInterrupt(pin, new IntrCallback<typeof(*this)>(this, &method))
+#define attachObjGPIOInterrupt(pin, trigger, method) \
+	attachGPIOInterrupt(pin, trigger, \
+            new IntrCallback<typeof(*this)>(this, &method))
 
 template <typename T>
 class IntrCallback : public GenIntrCallback {

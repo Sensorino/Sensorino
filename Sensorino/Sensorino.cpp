@@ -77,9 +77,9 @@ Sensorino::Sensorino(bool noSM, bool noRE) {
     PCMSK2 = 0;
     PCICR = 0;
 
-    /* Ready to go */
+    /* Ready to go.  Interrupt is active-low.  */
     pinMode(CONFIG_INTR_PIN, INPUT);
-    attachGPIOInterrupt(CONFIG_INTR_PIN, radioInterrupt);
+    attachGPIOInterrupt(CONFIG_INTR_PIN, LEVEL_LOW, radioInterrupt);
 
     sei();
 }
@@ -121,12 +121,6 @@ void Sensorino::radioCheckPacket(void) {
 }
 
 void Sensorino::radioInterrupt(uint8_t pin) {
-    /* Make sure the line is low since we're probably registered for
-     * both edges.  The NRF24L01+ interrupt is active-low.
-     */
-    if (digitalRead(CONFIG_INTR_PIN))
-        return;
-
     /* Check if the radio is busy, e.g. this may be a Tx FIFO empty
      * interrupt or, the ACK receival, and we're not interested in
      * those, RadioHead should take care of them.
@@ -258,8 +252,8 @@ ISR(BADISR_vect) {
 #endif
 
 /* Globals.. can be moved to Sensorino as statics */
-static void *gpio_handler[NUM_DIGITAL_PINS];
-static uint64_t gpio_obj_mask;
+static volatile void *gpio_handler[NUM_DIGITAL_PINS];
+static volatile uint8_t port_obj_mask[3], port_edge_mask[3];
 static volatile uint8_t port_val[3];
 /* Could get rid of this at some cost... */
 static volatile uint8_t pcint_to_gpio[24] = {
@@ -268,65 +262,109 @@ static volatile uint8_t pcint_to_gpio[24] = {
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 };
 
-static void SensorinoGPIOISR(uint8_t port, uint8_t new_val) {
+static void SensorinoGPIOISR(uint8_t port, volatile uint8_t *pin_reg) {
+    uint8_t pin_msk = 1;
+    uint8_t num;
+
+    uint8_t new_val = *pin_reg;
     uint8_t diff = port_val[port] ^ new_val;
-    port_val[port] = new_val;
+    port_val[port] ^= diff & port_edge_mask[port];
 
     for (volatile uint8_t *gpio = &pcint_to_gpio[port << 3]; diff;
-            diff >>= 1, gpio++)
-        if ((diff & 1) && (uint8_t) ~*gpio) {
-            if (gpio_obj_mask & ((uint64_t) 1 << *gpio)) {
-                GenIntrCallback *cb = (GenIntrCallback *) gpio_handler[*gpio];
-                cb->call(*gpio);
+            pin_msk <<= 1, gpio++) {
+        if (!(diff & pin_msk))
+            continue;
+        diff ^= pin_msk;
+
+        uint8_t num = *gpio;
+        if (num == 0xff)
+            continue;
+
+        /* For edge-triggered pins call back once.  Some edges may
+         * be missed (any number of opposite pairs) but we have no way to
+         * detect edges other than by comparing latest value because the
+         * PCIFR flag has been cleared by now.
+         *
+         * For level-triggered loop as long as level is maintained.  No
+         * need to re-check after re-enabling interrupts because a new
+         * edge will set PCIFR and send us back here as soon as we return.
+         * Note that at this point we already know that the level matches.
+         */
+        while (1) {
+            if (port_obj_mask[port] & pin_msk) {
+                GenIntrCallback *cb = (GenIntrCallback *) gpio_handler[num];
+                cb->call(num);
             } else {
                 void (*handler)(uint8_t) =
-                    (void (*)(uint8_t)) gpio_handler[*gpio];
-                handler(*gpio);
+                    (void (*)(uint8_t)) gpio_handler[num];
+                handler(num);
             }
+
+            if (port_edge_mask[port] & pin_msk)
+                break;
+            if ((new_val ^ *pin_reg) & pin_msk)
+                break;
         }
+    }
 }
 
 ISR(PCINT0_vect) {
-    SensorinoGPIOISR(0, PINB);
+    SensorinoGPIOISR(0, &PINB);
 }
 
 ISR(PCINT1_vect) {
-    SensorinoGPIOISR(1, PINC);
+    SensorinoGPIOISR(1, &PINC);
 }
 
 ISR(PCINT2_vect) {
-    SensorinoGPIOISR(2, PIND);
+    SensorinoGPIOISR(2, &PIND);
 }
 
-static void doAttachGPIOInterrupt(uint8_t pin, void *handler, uint8_t obj) {
+static void doAttachGPIOInterrupt(uint8_t pin, uint8_t trigger,
+        void *handler, uint8_t obj) {
     if (pin >= NUM_DIGITAL_PINS)
         Sensorino::die(PSTR("Bad pin number"));
 
-    int pcint = (digitalPinToPCICRbit(pin) << 3) | digitalPinToPCMSKbit(pin);
+    uint8_t port = digitalPinToPCICRbit(pin);
+    uint8_t pcint = digitalPinToPCMSKbit(pin);
+    uint8_t pcmsk = 1 << pcint;
 
     gpio_handler[pin] = handler;
-    pcint_to_gpio[pcint] = pin;
+    pcint_to_gpio[(port << 3) | pcint] = pin;
     if (obj)
-        gpio_obj_mask |= (uint64_t) 1 << pin;
+        port_obj_mask[port] |= pcmsk;
     else
-        gpio_obj_mask &= ~((uint64_t) 1 << pin);
+        port_obj_mask[port] &= ~pcmsk;
+
+    port_val[port] &= ~pcmsk;
+    if (trigger == Sensorino::EDGE_ANY) {
+        port_edge_mask[port] |= pcmsk;
+
+        port_val[port] |= pcmsk & *portInputRegister(digitalPinToPort(pin));
+    } else {
+        port_edge_mask[port] &= ~pcmsk;
+
+        if (trigger == Sensorino::LEVEL_LOW)
+            port_val[port] |= pcmsk;
+    }
 
     /* Enable corresponding interrupt */
-    port_val[digitalPinToPCICRbit(pin)] =
-        *portInputRegister(digitalPinToPort(pin));
-    *digitalPinToPCMSK(pin) |= 1 << digitalPinToPCMSKbit(pin);
-    *digitalPinToPCICR(pin) |= 1 << digitalPinToPCICRbit(pin);
+    *digitalPinToPCMSK(pin) |= pcmsk;
+    *digitalPinToPCICR(pin) |= 1 << port;
 }
 #else
-static void doAttachGPIOInterrupt(uint8_t pin, void *handler, uint8_t obj) {}
+static void doAttachGPIOInterrupt(uint8_t pin, uint8_t trigger,
+        void *handler, uint8_t obj) {}
 #endif
 
-void Sensorino::attachGPIOInterrupt(uint8_t pin, void (*handler)(uint8_t pin)) {
-    doAttachGPIOInterrupt(pin, (void *) handler, 0);
+void Sensorino::attachGPIOInterrupt(uint8_t pin, uint8_t trigger,
+        void (*handler)(uint8_t pin)) {
+    doAttachGPIOInterrupt(pin, trigger, (void *) handler, 0);
 }
 
-void Sensorino::attachGPIOInterrupt(uint8_t pin, GenIntrCallback *callback) {
-    doAttachGPIOInterrupt(pin, callback, 1);
+void Sensorino::attachGPIOInterrupt(uint8_t pin, uint8_t trigger,
+        GenIntrCallback *callback) {
+    doAttachGPIOInterrupt(pin, trigger, callback, 1);
 }
 
 /* Potentially-temporary global single sensorino instance.  We can pass this

@@ -21,7 +21,8 @@ public:
          */
         pinMode(pin, INPUT_PULLUP);
 
-        sensorino->attachObjGPIOInterrupt(pin, SwitchService::pinHandler);
+        sensorino->attachObjGPIOInterrupt(pin, Sensorino::EDGE_ANY,
+                SwitchService::pinHandler);
     }
 
 protected:
