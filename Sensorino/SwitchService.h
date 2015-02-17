@@ -59,7 +59,7 @@ protected:
         err(message, DATATYPE)->send();
     }
 
-    void pinHandler(int pin) {
+    void pinHandler(uint8_t pin) {
 #ifdef DEBOUNCE
         uint8_t state = digitalRead(pin), count = 0;
         /* Wait until the pin reports the same value in N read()s in a row */

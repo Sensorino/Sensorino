@@ -14,7 +14,7 @@ class RuleService;
 
 class GenIntrCallback {
 public:
-	virtual void call(int pin) = 0;
+	virtual void call(uint8_t pin) = 0;
 };
 
 class Sensorino {
@@ -32,7 +32,7 @@ class Sensorino {
         void deleteService(Service *s);
 
         Service *getServiceById(int id);
-        Service *getServiceByNum(int num);
+        Service *getServiceByNum(uint8_t num);
 
         static void die(const prog_char *err = NULL) __attribute__((noreturn));
 
@@ -41,8 +41,8 @@ class Sensorino {
          * by providing a group handler that calls individual handlers as
          * needed.
          */
-        void attachGPIOInterrupt(int pin, void (*handler)(int pin));
-        void attachGPIOInterrupt(int pin, GenIntrCallback *callback);
+        void attachGPIOInterrupt(uint8_t pin, void (*handler)(uint8_t pin));
+        void attachGPIOInterrupt(uint8_t pin, GenIntrCallback *callback);
 
     private:
         uint8_t address;
@@ -54,7 +54,7 @@ class Sensorino {
 
         void radioOpDone(void);
         void radioCheckPacket(void);
-        static void radioInterrupt(int pin);
+        static void radioInterrupt(uint8_t pin);
 
         static volatile uint8_t radioBusy;
 };
@@ -65,11 +65,11 @@ class Sensorino {
 template <typename T>
 class IntrCallback : public GenIntrCallback {
 	T *obj;
-	void (T::*method)(int);
+	void (T::*method)(uint8_t);
 public:
-	IntrCallback(T *nobj, void (T::*nmethod)(int)) :
+	IntrCallback(T *nobj, void (T::*nmethod)(uint8_t)) :
         obj(nobj), method(nmethod) {}
-	void call(int pin) { (obj->*method)(pin); }
+	void call(uint8_t pin) { (obj->*method)(pin); }
 };
 
 extern Sensorino *sensorino;

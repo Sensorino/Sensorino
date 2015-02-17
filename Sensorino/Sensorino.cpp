@@ -120,7 +120,7 @@ void Sensorino::radioCheckPacket(void) {
     radioBusy--;
 }
 
-void Sensorino::radioInterrupt(int pin) {
+void Sensorino::radioInterrupt(uint8_t pin) {
     /* Make sure the line is low since we're probably registered for
      * both edges.  The NRF24L01+ interrupt is active-low.
      */
@@ -204,7 +204,7 @@ void Sensorino::addService(Service *s) {
 }
 
 void Sensorino::deleteService(Service *s) {
-    int i;
+    uint8_t i;
 
     for (i = 0; i < servicesNum; i++)
         if (s == services[i])
@@ -219,14 +219,14 @@ void Sensorino::deleteService(Service *s) {
 }
 
 Service *Sensorino::getServiceById(int id) {
-    for (int i = 0; i < servicesNum; i++)
+    for (uint8_t i = 0; i < servicesNum; i++)
         if (services[i]->getId() == id)
             return services[i];
 
     return NULL;
 }
 
-Service *Sensorino::getServiceByNum(int num) {
+Service *Sensorino::getServiceByNum(uint8_t num) {
     return num < servicesNum ? services[num] : NULL;
 }
 
@@ -268,7 +268,7 @@ static volatile uint8_t pcint_to_gpio[24] = {
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 };
 
-static void SensorinoGPIOISR(int port, uint8_t new_val) {
+static void SensorinoGPIOISR(uint8_t port, uint8_t new_val) {
     uint8_t diff = port_val[port] ^ new_val;
     port_val[port] = new_val;
 
@@ -279,7 +279,8 @@ static void SensorinoGPIOISR(int port, uint8_t new_val) {
                 GenIntrCallback *cb = (GenIntrCallback *) gpio_handler[*gpio];
                 cb->call(*gpio);
             } else {
-                void (*handler)(int) = (void (*)(int)) gpio_handler[*gpio];
+                void (*handler)(uint8_t) =
+                    (void (*)(uint8_t)) gpio_handler[*gpio];
                 handler(*gpio);
             }
         }
@@ -297,7 +298,7 @@ ISR(PCINT2_vect) {
     SensorinoGPIOISR(2, PIND);
 }
 
-static void doAttachGPIOInterrupt(int pin, void *handler, int obj) {
+static void doAttachGPIOInterrupt(uint8_t pin, void *handler, uint8_t obj) {
     if (pin >= NUM_DIGITAL_PINS)
         Sensorino::die(PSTR("Bad pin number"));
 
@@ -317,14 +318,14 @@ static void doAttachGPIOInterrupt(int pin, void *handler, int obj) {
     *digitalPinToPCICR(pin) |= 1 << digitalPinToPCICRbit(pin);
 }
 #else
-static void doAttachGPIOInterrupt(int pin, void *handler, int obj) {}
+static void doAttachGPIOInterrupt(uint8_t pin, void *handler, uint8_t obj) {}
 #endif
 
-void Sensorino::attachGPIOInterrupt(int pin, void (*handler)(int pin)) {
+void Sensorino::attachGPIOInterrupt(uint8_t pin, void (*handler)(uint8_t pin)) {
     doAttachGPIOInterrupt(pin, (void *) handler, 0);
 }
 
-void Sensorino::attachGPIOInterrupt(int pin, GenIntrCallback *callback) {
+void Sensorino::attachGPIOInterrupt(uint8_t pin, GenIntrCallback *callback) {
     doAttachGPIOInterrupt(pin, callback, 1);
 }
 
