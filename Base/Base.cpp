@@ -73,6 +73,7 @@ static bool checkJsonError(aJsonObject *obj) {
 
 void Base::loop() {
     static aJsonStream aJsonSerial(&Serial);
+    static uint8_t garbageCnt = 0;
 
     /* Wait until something happens on UART or radio */
     __asm__ volatile ("sleep");
@@ -121,11 +122,25 @@ void Base::loop() {
 
             /* Successfully converted to JSON */
             if (obj) {
-                /* FIXME this blocks */
-                aJson.print(obj, &aJsonSerial);
+                aJsonObject *type = aJson.getObjectItem(obj, "type");
+                bool garbage = !strcmp(type->valuestring, "unknown") ||
+                    !strcmp(type->valuestring, "garbage");
+
+                /* Poor man's printk_ratelimit */
+                if (garbage && garbageCnt < 3) {
+                    garbageCnt++;
+                    garbage = false;
+                } else if (!garbage)
+                    garbageCnt = 0;
+
+                if (!garbage) {
+                    /* FIXME this blocks */
+                    aJson.print(obj, &aJsonSerial);
 #ifdef USE_NEWLINES
-                Serial.write("\r\n");
+                    Serial.write("\r\n");
 #endif
+                }
+
                 aJson.deleteItem(obj);
             }
         }
