@@ -62,13 +62,21 @@ protected:
 
     void pinHandler(uint8_t pin) {
 #ifdef DEBOUNCE
-        uint8_t state = digitalRead(pin), count = 0;
+        uint8_t state = digitalRead(pin), count = 0, loops = 0;
         /* Wait until the pin reports the same value in N read()s in a row */
         while (++count < DEBOUNCE) {
             Timers::delay(1);
             if (digitalRead(pin) != state) {
                 state = !state;
+                loops += count;
                 count = 0;
+                if (loops >= 255 - DEBOUNCE) {
+                    /* Timeout: give up on this pin, must be a clock or
+                     * floating, or something else.
+                     */
+                    sensorino->detachGPIOInterrupt(pin);
+                    return;
+                }
             }
         }
 #endif
