@@ -50,6 +50,7 @@ class Sensorino {
                 void (*handler)(uint8_t pin));
         void attachGPIOInterrupt(uint8_t pin, uint8_t trigger,
                 GenIntrCallback *callback);
+        void detachGPIOInterrupt(uint8_t pin);
 
     private:
         uint8_t address;

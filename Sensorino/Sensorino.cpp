@@ -352,9 +352,21 @@ static void doAttachGPIOInterrupt(uint8_t pin, uint8_t trigger,
     *digitalPinToPCMSK(pin) |= pcmsk;
     *digitalPinToPCICR(pin) |= 1 << port;
 }
+
+void Sensorino::detachGPIOInterrupt(uint8_t pin) {
+    uint8_t port = digitalPinToPCICRbit(pin);
+    uint8_t pcint = digitalPinToPCMSKbit(pin);
+    uint8_t pcmsk = 1 << pcint;
+
+    pcint_to_gpio[(port << 3) | pcint] = 0xff;
+
+    /* Disable corresponding interrupt */
+    *digitalPinToPCMSK(pin) &= ~pcmsk;
+}
 #else
 static void doAttachGPIOInterrupt(uint8_t pin, uint8_t trigger,
         void *handler, uint8_t obj) {}
+void Sensorino::detachGPIOInterrupt(uint8_t pin) {}
 #endif
 
 void Sensorino::attachGPIOInterrupt(uint8_t pin, uint8_t trigger,
