@@ -53,7 +53,8 @@ uint32_t Timers::now(void) {
 	 * context, is:
 	 * return TCNT1 | ((uint32_t) timer_cycles << 16);
 	 */
-	uint16_t lo, hi, sreg;
+	uint16_t lo, hi;
+	uint8_t sreg;
 
 	/*
 	 * First make sure no overflow is pending.  This should only happen
