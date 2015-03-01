@@ -132,6 +132,13 @@ void Sensorino::radioInterrupt(uint8_t pin) {
     sensorino->radioOpDone();
 }
 
+void Sensorino::radioRun() {
+    cli();
+    /* This will handle new messages */
+    sensorino->radioOpDone();
+    sei();
+}
+
 volatile uint8_t Sensorino::radioBusy = 0;
 
 bool Sensorino::sendMessage(Message &m) {

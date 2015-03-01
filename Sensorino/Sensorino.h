@@ -52,6 +52,11 @@ class Sensorino {
                 GenIntrCallback *callback);
         void detachGPIOInterrupt(uint8_t pin);
 
+        /* This can be used in non-sleeping main loops for debugging
+         * interrupts problems.
+         */
+        void radioRun();
+
     private:
         uint8_t address;
 
