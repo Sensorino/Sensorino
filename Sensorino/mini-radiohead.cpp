@@ -426,7 +426,8 @@ bool RHReliableDatagram::sendtoWait(uint8_t *buf, uint8_t len,
 
 bool RHReliableDatagram::recvfromAck(uint8_t *buf, uint8_t *len, uint8_t *from,
 		uint8_t *to, uint8_t *id, uint8_t *flags) {
-	while (!available());
+	if (!available())
+		return 0;
 
 	nrf24_rx_read(buf, len);
 
