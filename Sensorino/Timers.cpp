@@ -160,6 +160,20 @@ bool Timers::pending(void) {
 static volatile uint8_t updating;
 static volatile uint8_t updated;
 
+/*
+ * Do we want callbacks to run with interrupts enabled by default?  This
+ * way this code can more easily tolerate long-running callbacks.
+ * Either way the callback is free to enable or disable the interrupts
+ * on its own.
+ */
+#ifdef CALLBACK_WITH_INTERRUPTS
+# define SEI	sei()
+# define CLI	cli()
+#else
+# define SEI
+# define CLI
+#endif
+
 ISR(TIMER1_COMPA_vect) {
 	uint32_t now;
 
@@ -178,15 +192,15 @@ ISR(TIMER1_COMPA_vect) {
 
 		if (cls) {
 			GenCallback *cb = (GenCallback *) callback;
-			sei();
+			SEI;
 			cb->call();
-			cli();
+			CLI;
 			delete cb;
 		} else {
 			void (*cb)(void) = (void (*)(void)) callback;
-			sei();
+			SEI;
 			cb();
-			cli();
+			CLI;
 		}
 
 		now = Timers::now();
