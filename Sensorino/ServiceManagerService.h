@@ -12,7 +12,7 @@ public:
          * fire the announcement.
          */
         Timers::setObjTimeout(ServiceManagerService::initialAnnounce,
-                Timers::now() + F_CPU);
+                Timers::now() + F_TMR);
     }
 
 protected:

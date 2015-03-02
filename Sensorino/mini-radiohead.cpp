@@ -92,9 +92,11 @@ static inline void nrf24_ce(uint8_t level) {
 	static uint32_t prev_ce_edge;
 
 	if (level)
-		while (timer_read() - prev_ce_edge <= F_CPU / 100000);
+		while (timer_read() - prev_ce_edge <=
+			DIVIDE_ROUND_UP(F_TMR, 100000));
 	else
-		while (timer_read() - prev_ce_edge <= F_CPU / 5000);
+		while (timer_read() - prev_ce_edge <=
+			DIVIDE_ROUND_UP(F_TMR, 5000));
 #else
 	/* This should take at least 10us (rising) or 200us (falling) */
 	if (level)

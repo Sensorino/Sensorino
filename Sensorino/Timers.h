@@ -4,8 +4,15 @@
  *
  * Licensed under AGPLv3.
  */
+#ifndef TIMERS_H_INCLUDED
+#define TIMERS_H_INCLUDED
 
 #include <stdint.h>
+
+#define PRESCALER	1024
+#define F_TMR		(F_CPU / PRESCALER)
+
+#define DIVIDE_ROUND_UP(a, b) (((a) + (b) - 1) / (b))
 
 class GenCallback {
 public:
@@ -35,3 +42,4 @@ public:
 	Callback(T *nobj, void (T::*nmethod)(void)) : obj(nobj), method(nmethod) {}
 	void call(void) { (obj->*method)(); }
 };
+#endif

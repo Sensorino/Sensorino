@@ -14,29 +14,40 @@
 Timers::Timers(void) {}
 Timers::init Timers::initializer;
 
+#if (PRESCALER == 1)
+# define TCCRB_CS	0x01
+#elif (PRESCALER == 64)
+# define TCCRB_CS	0x03
+#elif (PRESCALER == 1024)
+# define TCCRB_CS	0x05
+#else
+# error Bad prescaler value
+#endif
+
 Timers::init::init(void) {
 	TCCR1A = 0x00;
-	TCCR1B = 0x01;
+	TCCR1B = 0x00 | TCCRB_CS;
 	TIMSK1 = 0x01;
 }
 
 static volatile uint16_t timer_cycles = 0;
-static uint32_t last_sec = 0;
+#define SEC_CYCLES DIVIDE_ROUND_UP(0x10000L, F_TMR)
+#define SEC_DIFF (SEC_CYCLES * F_TMR)
+static uint32_t next_sec = SEC_DIFF;
 static uint32_t seconds = 0;
 
 static void update_timeouts(void);
 
 /* Always called with interrupts disabled */
 static void timer_overflow(void) {
-	uint32_t new_val;
-
 	timer_cycles ++;
 
-	new_val = (uint32_t) timer_cycles << 16;
-	if (new_val >= last_sec + F_CPU || unlikely(new_val < last_sec)) {
-		last_sec += F_CPU;
-		seconds ++;
+#if 0
+	if ((uint16_t) (timer_cycles - (next_sec >> 16)) < 0x8000) {
+		next_sec += SEC_DIFF;
+		seconds += SEC_CYCLES;
 	}
+#endif
 
 	update_timeouts();
 }
@@ -87,12 +98,12 @@ uint32_t Timers::now(void) {
 }
 
 uint32_t Timers::millis(void) {
-	return now() / (F_CPU / 1000);
+	return now() / (F_TMR / 1000);
 }
 
 /* Burn some cycles */
 void Timers::delay(uint16_t msecs) {
-	uint32_t end = now() + (uint32_t) msecs * (F_CPU / 1000);
+	uint32_t end = now() + (uint32_t) msecs * (F_TMR / 1000);
 	while (now() < end);
 }
 
@@ -104,7 +115,7 @@ void Timers::delay(uint16_t msecs) {
  * little later than expected, but not sooner than expected.  This is
  * guaranteed, but the "little later" can be rather long in extreme
  * cases.  It will be reasonably short if callback routines are reasonably
- * short.  Timeouts being set need to be within 2^32 / F_CPU / 2 seconds
+ * short.  Timeouts being set need to be within 2^32 / F_TMR / 2 seconds
  * from now, which is about 120 seconds at 16MHz.
  *
  * Callbacks currently run with interrupts enabled in order let the timer
@@ -218,7 +229,7 @@ ISR(TIMER1_COMPA_vect) {
  * setting the timer compare register to a new value will take less than
  * MIN_DELAY cycles.
  */
-#define MIN_DELAY 60
+#define MIN_DELAY DIVIDE_ROUND_UP(60, PRESCALER)
 
 /* Interrupts disabled here */
 static void update_timeouts(void) {
