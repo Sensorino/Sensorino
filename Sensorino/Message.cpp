@@ -223,9 +223,9 @@ int Message::find(Data::Type t, int num, void *value) {
                 return 0;
 
             float_val = raw[pos++];
-            float_val |= raw[pos++] << 8;
-            float_val |= raw[pos++] << 16;
-            float_val |= raw[pos++] << 24;
+            float_val |= (uint16_t) raw[pos++] << 8;
+            float_val |= (uint32_t) raw[pos++] << 16;
+            float_val |= (uint32_t) raw[pos++] << 24;
             *(uint32_t *) value = float_val;
         } else if (INT_TYPE(t)) {
             int int_val;
@@ -426,9 +426,9 @@ void Message::iterGetTypeValue(Message::iter i, Data::Type *type, void *val) {
             uint32_t float_val;
 
             float_val = raw[i++];
-            float_val |= raw[i++] << 8;
-            float_val |= raw[i++] << 16;
-            float_val |= raw[i++] << 24;
+            float_val |= (uint16_t) raw[i++] << 8;
+            float_val |= (uint32_t) raw[i++] << 16;
+            float_val |= (uint32_t) raw[i++] << 24;
             *(uint32_t *) val = float_val;
         } else if (INT_TYPE(t)) {
             int int_val;
