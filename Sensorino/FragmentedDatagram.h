@@ -36,6 +36,7 @@ public:
 		uint8_t fragLen;
 		uint8_t *fragBuf;
 		uint8_t newMsgId, curMsgId;
+		uint16_t count;
 
 		*len = 0;
 		fragBuf = buf;
@@ -72,6 +73,8 @@ public:
 
 			fragBuf += fragLen;
 			curMsgId = (newMsgId + 1) & ~FRAG_CONTINUE_FLAG;
+
+			for (count = 0xffff; count && !T::available(); count--);
 		}
 	}
 
