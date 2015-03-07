@@ -88,7 +88,7 @@ void setup() {
 
 void loop() {
   if (Timers::pending())
-    set_sleep_mode(SLEEP_MODE_STANDBY);
+    set_sleep_mode(SLEEP_MODE_IDLE);
   else
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   sleep_cpu();
