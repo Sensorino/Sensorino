@@ -24,22 +24,55 @@ Timers::init Timers::initializer;
 # error Bad prescaler value
 #endif
 
-Timers::init::init(void) {
-	TCCR1A = 0x00;
-	TCCR1B = 0x00 | TCCRB_CS;
-	TIMSK1 = 0x01;
-}
-
 static volatile uint16_t timer_cycles = 0;
 #define SEC_CYCLES DIVIDE_ROUND_UP(0x10000L, F_TMR)
 #define SEC_DIFF (SEC_CYCLES * F_TMR)
 static uint32_t next_sec = SEC_DIFF;
 static uint32_t seconds = 0;
+static bool inited;
 
 static void update_timeouts(void);
 
+/*
+ * Note this is a static constructor and will run before main() but its order
+ * in relation to other C++ static initializers in other compile units is
+ * undefined.  We try to allow those other initializers to schedule timeouts
+ * even before this runs by putting those timeouts on the list but only
+ * actually scheduling them when we get here.
+ *
+ * On Arduino however the register will get overwritten by main() so we
+ * just do a minimal setup here to make now() work and will reinitialize
+ * everything when we hit our first interrupt.  Inevitably this breaks
+ * Arduino's analogWrite() on the OCR1A and OCR1B pins.
+ *
+ * Note we can't reset TCNT1 if now() is to be monotonic.  We could return 0
+ * from now() before inited gets set but that would easily cause a lock-up
+ * when someone uses delay() with interrupts disabled.
+ */
+Timers::init::init(void) {
+	TCCR1A = 0x00;
+	TCCR1B = 0x00 | TCCRB_CS;
+	TIMSK1 = 0x01;
+#ifndef ARDUINO
+	inited = 1;
+	update_timeouts();
+#endif
+}
+
 /* Always called with interrupts disabled */
 static void timer_overflow(void) {
+#ifdef ARDUINO
+	if (unlikely(!inited)) {
+		if (TCCR1A != 0x00 || TCCR1B != 0x00 | TCCRB_CS) {
+			TCCR1A = 0x00;
+			TCCR1B = 0x00 | TCCRB_CS;
+			TCCR1C = 0x00;
+			inited = 1;
+		}
+		return;
+	}
+#endif
+
 	timer_cycles ++;
 
 #if 0
@@ -236,7 +269,7 @@ static void update_timeouts(void) {
 	int16_t diff;
 	uint16_t ocra, tcnt;
 
-	if (unlikely(updating))
+	if (unlikely(updating || !inited))
 		return;
 
 	TIMSK1 = 0x01;
