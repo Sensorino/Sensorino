@@ -11,8 +11,7 @@ public:
          * second from the moment Sensorino constructor calls us and
          * fire the announcement.
          */
-        Timers::setObjTimeout(ServiceManagerService::initialAnnounce,
-                Timers::now() + F_TMR);
+        Timers::setObjTimeout(ServiceManagerService::initialAnnounce, F_TMR);
     }
 
 protected:
