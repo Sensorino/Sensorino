@@ -76,6 +76,9 @@ void setup() {
   /* For Active mode: */
   power_twi_disable();
   power_adc_disable();
+  power_timer0_disable();
+  power_timer2_disable();
+  power_usart0_disable();
 }
 
 void loop() {
