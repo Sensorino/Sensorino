@@ -13,6 +13,7 @@
 #include <Sensorino.h>
 #include <RelayService.h>
 #include <SwitchService.h>
+#include <OnchipThermometerService.h>
 
 #include <avr/io.h>
 #include <avr/sleep.h>
@@ -33,6 +34,9 @@
 #define RELAY2_GPIO 4
 #define RELAY3_GPIO 5
 
+/* On-chip thermistor's offset in C determined experimentally */
+#define TEMP_OFFSET 60
+
 Sensorino s;
 RelayService rs0(10, RELAY0_GPIO, 0);
 RelayService rs1(11, RELAY1_GPIO, 0);
@@ -45,6 +49,7 @@ SwitchService ss3(23, SWITCH3_GPIO);
 SwitchService ss4(24, SWITCH4_GPIO);
 SwitchService ss5(25, SWITCH5_GPIO);
 SwitchService ss6(26, SWITCH6_GPIO);
+OnchipThermometerService ots(30, TEMP_OFFSET);
 
 void setup() {
   __asm__ volatile ("wdr");
